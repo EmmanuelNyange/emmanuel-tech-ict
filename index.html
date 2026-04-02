@@ -85,6 +85,7 @@ section.show {
     text-decoration: none;
     border-radius: 6px;
     transition: 0.3s;
+    
 }
 
 .btn:hover { background: #e84118; }
@@ -166,8 +167,13 @@ footer {
 </nav>
 
 <section>
-    <h2>Welcome</h2>
-    <p>Fast, reliable and affordable ICT repair services.</p>
+    <h2>About Us</h2>
+    <p>We are tech company located at Mwatate, Kenya. We offer Fast, reliable and affordable ICT services.</p>
+
+    <h2>Our Vision</h2>
+    <p><i>To become a leading provider of innovative and affordable ICT solutions that empower individuals, businesses, and institutions to thrive in the digital era.</i></p>
+
+
 </section>
 
 <section id="services">
@@ -175,7 +181,7 @@ footer {
     <div class="services-grid">
 
         <div class="card">
-            <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8">
+            <img src="https://images.unsplash.com/photo-1593642532973-d31b6557fa68">
             <div class="card-content">
                 <i class="fas fa-paint-brush"></i>
                 <h3>Graphics Design</h3>
@@ -254,7 +260,7 @@ footer {
     <form onsubmit="sendToWhatsApp(event)">
         <input type="text" id="name" placeholder="Your Name" required>
         <input type="text" id="contact" placeholder="Phone or Email" required>
-        <input type="text" id="service" placeholder="Service" readonly>
+        <input type="text" id="service" placeholder="Service"  required >
         <textarea id="description" placeholder="Describe your issue" required></textarea>
         <button type="submit" class="btn">Submit Booking</button>
     </form>
