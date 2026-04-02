@@ -1,108 +1,311 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>Emmanuel Tech ICT Solutions</title>
-    
-    <meta name="description" content="Emmanuel Tech ICT Solutions offers reliable laptop, desktop, and printer repair services. Fast, affordable, and professional. Your Tech Partner.">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emmanuel Tech ICT Solutions</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background-color: #f4f4f4;
-        }
-        header {
-            background: #0a3d62;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            background-image:url('https://images.unsplash.com/photo-1519389950473-47ba0277781c');
-            background-size: cover;
-            background-position: center;
-        }
-        nav {
-            background: #1e90ff;
-            padding: 10px;
-            text-align: center;
-        }
-        nav a {
-            color: white;
-            margin: 10px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        section {
-            padding: 20px;
-        }
-        .services {
-            background: white;
-            margin: 10px;
-            padding: 20px;
-            border-radius: 8px;
-        }
-        footer {
-            background: #0a3d62;
-            color: white;
-            text-align: center;
-            padding: 15px;
-        }
-        .btn {
-            display: inline-block;
-            padding: 10px 15px;
-            background: green;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-        }
-    </style>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    background: #f4f6f9;
+}
+
+header {
+    background: linear-gradient(rgba(10,61,98,0.8), rgba(10,61,98,0.8)), url('https://images.unsplash.com/photo-1519389950473-47ba0277781c');
+    background-size: cover;
+    color: white;
+    text-align: center;
+    padding: 60px 20px;
+}
+
+nav {
+    background: #1e90ff;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 15px;
+}
+
+nav a { color: white; text-decoration: none; font-weight: 600; }
+
+section {
+    padding: 40px 20px;
+    max-width: 1100px;
+    margin: auto;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: all 0.8s ease;
+}
+
+section.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: 0.4s ease;
+}
+
+.card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.card img { width: 100%; height: 160px; object-fit: cover; }
+
+.card-content { padding: 15px; text-align: center; }
+
+.card i {
+    font-size: 30px;
+    margin-bottom: 10px;
+    color: #1e90ff;
+}
+
+.btn {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 15px;
+    background: #ff4757;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+
+.btn:hover { background: #e84118; }
+
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.gallery img { width: 100%; border-radius: 10px; }
+
+.testimonials {
+    display: grid;
+    gap: 20px;
+}
+
+.testimonial {
+    background: white;
+    padding: 20px;
+    border-left: 5px solid #1e90ff;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+form input, form textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+footer {
+    background: #0a3d62;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Floating WhatsApp Button */
+.whatsapp-float {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    bottom: 20px;
+    right: 20px;
+    background: #25D366;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    font-size: 30px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 100;
+}
+
+.whatsapp-float i {
+    margin-top: 15px;
+}
+
+.whatsapp-float:hover {
+    background: #1ebe5d;
+}
+</style>
 </head>
 
 <body>
 
 <header>
     <h1>Emmanuel Tech ICT Solutions</h1>
-    <p><i>Your Tech Partner</i></p>
+    <p>Your Tech Partner</p>
 </header>
 
 <nav>
-    <a href="#home">Home</a>
+    <a href="#">Home</a>
     <a href="#services">Services</a>
-    <a href="#contact">Contact</a>
+    <a href="#gallery">Gallery</a>
+    <a href="#booking">Book</a>
 </nav>
 
-<section id="home">
+<section>
     <h2>Welcome</h2>
-    <p>
-        Looking for laptop, desktop, or printer repair near you? Emmanuel Tech ICT Solutions offers 
-        fast, reliable, and affordable repair services.
-    </p>
+    <p>Fast, reliable and affordable ICT repair services.</p>
 </section>
 
-<section id="services" class="services">
+<section id="services">
     <h2>Our Services</h2>
-    <ul>
-        <li>Graphics Design</li>
-        <li>Desktop & Laptop Repair</li>
-        <li>Printer Repair</li>
-        <li>ICT Consulting</li>
-        <li>SEO Marketing</li>
-    </ul>
+    <div class="services-grid">
+
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1581091870627-3aebf9c3b2c7">
+            <div class="card-content">
+                <i class="fas fa-paint-brush"></i>
+                <h3>Graphics Design</h3>
+                <a href="#booking" class="btn" onclick="setService('Graphics Design')">Book Now</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8">
+            <div class="card-content">
+                <i class="fas fa-laptop"></i>
+                <h3>Laptop & Desktop Repair</h3>
+                <a href="#booking" class="btn" onclick="setService('Laptop/Desktop Repair')">Book Now</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1580894908361-967195033215">
+            <div class="card-content">
+                <i class="fas fa-print"></i>
+                <h3>Printer Repair</h3>
+                <a href="#booking" class="btn" onclick="setService('Printer Repair')">Book Now</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1552664730-d307ca884978">
+            <div class="card-content">
+                <i class="fas fa-network-wired"></i>
+                <h3>ICT Consulting</h3>
+                <a href="#booking" class="btn" onclick="setService('ICT Consulting')">Book Now</a>
+            </div>
+        </div>
+
+        <div class="card">
+            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f">
+            <div class="card-content">
+                <i class="fas fa-chart-line"></i>
+                <h3>SEO Marketing</h3>
+                <a href="#booking" class="btn" onclick="setService('SEO Marketing')">Book Now</a>
+            </div>
+        </div>
+
+    </div>
 </section>
 
-<section id="contact" class="services">
-    <h2>Contact Us</h2>
-    <p>📍 Location: Mwatate / Mombasa</p>
-    <p>📞 Phone: 0716205974</p>
-    
-    <a class="btn" href="https://wa.me/254716205974">Chat on WhatsApp</a>
+<section id="gallery">
+    <h2>Before & After Repairs</h2>
+    <div class="gallery">
+        <img src="https://images.unsplash.com/photo-1587202372775-e229f172b9d7">
+        <img src="https://images.unsplash.com/photo-1593642532973-d31b6557fa68">
+        <img src="https://images.unsplash.com/photo-1581092334651-ddf26d9a09d0">
+    </div>
+</section>
+
+<section>
+    <h2>What Our Clients Say</h2>
+    <div class="testimonials">
+        <div class="testimonial">
+            <p>"Very fast service! My laptop was fixed within hours."</p>
+            <b>- John K.</b>
+        </div>
+        <div class="testimonial">
+            <p>"Affordable and professional. Highly recommend!"</p>
+            <b>- Mary W.</b>
+        </div>
+        <div class="testimonial">
+            <p>"Best ICT support in town. Reliable and trustworthy."</p>
+            <b>- David M.</b>
+        </div>
+    </div>
+</section>
+
+<section id="booking">
+    <h2>Book a Service</h2>
+    <form onsubmit="sendToWhatsApp(event)">
+        <input type="text" id="name" placeholder="Your Name" required>
+        <input type="text" id="contact" placeholder="Phone or Email" required>
+        <input type="text" id="service" placeholder="Service" readonly>
+        <textarea id="description" placeholder="Describe your issue" required></textarea>
+        <button type="submit" class="btn">Submit Booking</button>
+    </form>
 </section>
 
 <footer>
-    <p>© 2026 Emmanuel Tech ICT Solutions | Your Tech Partner</p>
+    <p>© 2026 Emmanuel Tech ICT Solutions</p>
 </footer>
+
+<!-- Floating WhatsApp Button -->
+<a href="https://wa.me/254716205974" class="whatsapp-float" target="_blank">
+    <i class="fab fa-whatsapp"></i>
+</a>
+
+<script>
+function setService(serviceName) {
+    document.getElementById("service").value = serviceName;
+}
+
+function sendToWhatsApp(event) {
+    event.preventDefault();
+
+    let name = document.getElementById("name").value;
+    let contact = document.getElementById("contact").value;
+    let service = document.getElementById("service").value;
+    let description = document.getElementById("description").value;
+
+    let message = `Hello Emmanuel Tech ICT Solutions,%0A%0A`
+        + `Name: ${name}%0A`
+        + `Contact: ${contact}%0A`
+        + `Service: ${service}%0A`
+        + `Issue: ${description}`;
+
+    let phone = "254716205974";
+    let url = `https://wa.me/${phone}?text=${message}`;
+
+    window.open(url, "_blank");
+}
+
+// Scroll Animation
+const sections = document.querySelectorAll("section");
+
+window.addEventListener("scroll", () => {
+    sections.forEach(sec => {
+        const top = sec.getBoundingClientRect().top;
+        if (top < window.innerHeight - 100) {
+            sec.classList.add("show");
+        }
+    });
+});
+</script>
 
 </body>
 </html>
