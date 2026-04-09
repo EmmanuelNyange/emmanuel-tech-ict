@@ -12,174 +12,242 @@
 :root { --bg:#f4f6f9; --text:#000; --card:#fff; }
 body.dark { --bg:#0f172a; --text:#fff; --card:#1e293b; }
 
-body { margin:0; font-family:'Poppins',sans-serif; background:var(--bg); color:var(--text); padding-top:70px;} 
+body {
+    margin:0;
+    font-family:'Poppins',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding-top:70px;
+}
 
-#loader{position:fixed;width:100%;height:100%;background:#0a3d62;display:flex;justify-content:center;align-items:center;color:#fff;z-index:9999;}
+/* LOADER */
+#loader{
+    position:fixed;
+    width:100%;
+    height:100%;
+    background:#0a3d62;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:#fff;
+    z-index:9999;
+}
 
-header{position:relative;height:70vh;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;overflow:hidden;text-align:center;}
-header img{position:absolute;width:100%;height:100%;object-fit:cover;opacity:0;animation:fade 16s infinite;}
-header img:nth-child(1){animation-delay:0s;} 
-header img:nth-child(2){animation-delay:4s;} 
-header img:nth-child(3){animation-delay:8s;} 
+/* NAVBAR */
+nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 25px;
+    background: rgba(10, 61, 98, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+}
+
+.logo {
+    color: #fff;
+    font-weight: 600;
+    font-size: 20px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 25px;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    position: relative;
+}
+
+nav a::after {
+    content:'';
+    position:absolute;
+    width:0;
+    height:2px;
+    bottom:-5px;
+    left:0;
+    background:#1e90ff;
+    transition:0.3s;
+}
+
+nav a:hover::after { width:100%; }
+
+/* MOBILE MENU */
+.menu-toggle {
+    display: none;
+    font-size: 26px;
+    color: #fff;
+    cursor: pointer;
+}
+
+@media(max-width:768px){
+    .menu-toggle {
+        display: block;
+        position: absolute;
+        right: 20px;
+        top: 18px;
+    }
+
+    .nav-links {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 65px;
+        right: 20px;
+        background: #1e90ff;
+        padding: 15px;
+        border-radius: 10px;
+        width: 180px;
+    }
+
+    .nav-links.active {
+        display: flex;
+    }
+}
+
+/* HEADER SLIDER */
+header{
+    position:relative;
+    height:70vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    color:#fff;
+    text-align:center;
+    overflow:hidden;
+}
+
+header img{
+    position:absolute;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    opacity:0;
+    animation:fade 16s infinite;
+}
+
+header img:nth-child(1){animation-delay:0s;}
+header img:nth-child(2){animation-delay:4s;}
+header img:nth-child(3){animation-delay:8s;}
 header img:nth-child(4){animation-delay:12s;}
 
-@keyframes fade{0%{opacity:0;}10%{opacity:1;}25%{opacity:1;}35%{opacity:0;}100%{opacity:0;}}
-header h1, header p{z-index:2;}
-
-/* NAV FIXED */
-nav{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:60px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:0 15px;
-background:#0a3d62;
-z-index:1000;
+@keyframes fade{
+0%{opacity:0;}
+10%{opacity:1;}
+25%{opacity:1;}
+35%{opacity:0;}
+100%{opacity:0;}
 }
 
-.nav-links{
-display:flex;
-gap:20px;
+header h1, header p { z-index:2; }
+
+/* SECTIONS */
+section{
+    padding:40px 20px;
+    max-width:1100px;
+    margin:auto;
 }
 
-.menu-toggle{
-display:none;
-font-size:26px;
-color:#fff;
-cursor:pointer;
+/* SERVICES */
+.services-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:20px;
 }
 
-@media(max-width:768px){
-.menu-toggle{
-display:block;
-position:fixed;
-top:10px;
-right:10px;
-z-index:2000;
-background:#0a3d62;
-padding:8px 10px;
-border-radius:5px;
+.card{
+    background:var(--card);
+    border-radius:12px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    overflow:hidden;
 }
 
-.nav-links{
-display:none;
-flex-direction:column;
-position:fixed;
-top:60px;
-right:10px;
-background:#1e90ff;
-padding:15px;
-border-radius:8px;
-width:180px;
+.card img{
+    width:100%;
+    height:160px;
+    object-fit:cover;
 }
 
-.nav-links.active{display:flex;}
+.card-content{
+    text-align:center;
+    padding:15px;
 }
 
-.nav-links{
-display:flex;
-gap:20px;
+/* BUTTON */
+.btn{
+    display:inline-block;
+    margin-top:10px;
+    padding:10px 15px;
+    background:#ff4757;
+    color:#fff;
+    border-radius:6px;
+    text-decoration:none;
 }
 
-.menu-toggle{
-display:none;
-font-size:26px;
-color:#fff;
-cursor:pointer;
+/* FORM */
+form input, form textarea{
+    width:100%;
+    padding:10px;
+    margin:8px 0;
 }
 
-@media(max-width:768px){
-.menu-toggle{
-display:block;
-position:fixed;
-top:15px;
-right:15px;
-z-index:1100;
+/* FOOTER */
+footer{
+    background:#0a3d62;
+    color:#fff;
+    text-align:center;
+    padding:20px;
 }
 
-.nav-links{
-display:none;
-flex-direction:column;
-position:fixed;
-top:60px;
-right:15px;
-background:#1e90ff;
-padding:15px;
-border-radius:8px;
-width:180px;
+/* FLOAT BUTTONS */
+.whatsapp-float{
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    background:#25D366;
+    color:#fff;
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:30px;
+    text-decoration:none;
 }
-
-.nav-links.active{display:flex;}
-}
-
-.nav-links{
-display:flex;
-gap:20px;
-}
-
-nav a{color:#fff;text-decoration:none;font-weight:500;}
-
-.menu-toggle{
-display:none;
-font-size:26px;
-color:#fff;
-cursor:pointer;
-}
-
-/* MOBILE FIX */
-@media(max-width:768px){
-.menu-toggle{display:block;position:absolute;right:20px;top:15px;}
-.nav-links{
-display:none;
-flex-direction:column;
-position:absolute;
-top:60px;
-right:20px;
-background:#1e90ff;
-padding:15px;
-border-radius:8px;
-}
-.nav-links.active{display:flex;}
-}
-
-section{padding:40px 20px;max-width:1100px;margin:auto;opacity:0;transform:translateY(40px);transition:0.8s;}
-section.show{opacity:1;transform:translateY(0);} 
-
-.services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;}
-.card{background:var(--card);border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);overflow:hidden;transition:0.3s;}
-.card:hover{transform:translateY(-8px);} 
-.card img{width:100%;height:160px;object-fit:cover;} 
-.card-content{text-align:center;padding:15px;} 
-
-.btn{display:inline-block;margin-top:10px;padding:10px 15px;background:#ff4757;color:#fff;border-radius:6px;text-decoration:none;border:none;} 
-
-form input,form textarea{width:100%;padding:10px;margin:8px 0;} 
-
-footer{background:#0a3d62;color:#fff;text-align:center;padding:20px;} 
-
-.whatsapp-float{position:fixed;bottom:20px;right:20px;background:#25D366;color:#fff;width:60px;height:60px;border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:30px;text-decoration:none;} 
 
 .call-float{
-position:fixed;
-bottom:90px;
-right:20px;
-background:#1e90ff;
-color:#fff;
-width:60px;
-height:60px;
-border-radius:50%;
-display:flex;
-justify-content:center;
-align-items:center;
-font-size:26px;
-text-decoration:none;
+    position:fixed;
+    bottom:90px;
+    right:20px;
+    background:#1e90ff;
+    color:#fff;
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:26px;
+    text-decoration:none;
 }
 
-.toggle{position:fixed;top:20px;left:20px;background:#fff;padding:10px;cursor:pointer;z-index:1000;}
+.toggle{
+    position:fixed;
+    top:20px;
+    left:20px;
+    background:#fff;
+    padding:10px;
+    cursor:pointer;
+}
 </style>
 </head>
 
@@ -189,80 +257,83 @@ text-decoration:none;
 <div class="toggle" onclick="toggleMode()">🌓</div>
 
 <nav>
-<div class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
-<div class="nav-links" id="navLinks">
-<a href="#">Home</a>
-<a href="#services">Services</a>
-<a href="#contact">Contact</a>
-</div>
+    <div class="logo">Emmanuel Tech</div>
+
+    <div class="menu-toggle" onclick="toggleMenu()">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="nav-links" id="navLinks">
+        <a href="#">Home</a>
+        <a href="#services">Services</a>
+        <a href="#contact">Contact</a>
+    </div>
 </nav>
 
 <header>
 <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c">
 <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085">
 <img src="https://images.unsplash.com/photo-1537432376769-00aabc1a4f6b">
-<img src="https://images.unsplash.com/photo-1600267165477-6d4a04c35b46">
+<img src="https://images.unsplash.com/photo-1526378722484-bd91ca387e72">
+
 <h1>Emmanuel Tech ICT Solutions</h1>
 <p id="typing"></p>
 </header>
 
 <section id="services">
 <h2>Our Services</h2>
+
 <div class="services-grid">
+
 <div class="card">
 <img src="https://images.unsplash.com/photo-1552664730-d307ca884978">
 <div class="card-content">
 <h3>ICT Consulting</h3>
 <a href="#booking" class="btn" onclick="setService('ICT Consulting')">Book Now</a>
-</div></div>
+</div>
+</div>
 
 <div class="card">
 <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8">
 <div class="card-content">
 <h3>Computer & Printer Repairs</h3>
 <a href="#booking" class="btn" onclick="setService('Computer & Printer Repairs')">Book Now</a>
-</div></div>
+</div>
+</div>
 
 <div class="card">
 <img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0">
 <div class="card-content">
 <h3>Graphics Design</h3>
 <a href="#booking" class="btn" onclick="setService('Graphics Design')">Book Now</a>
-</div></div>
+</div>
+</div>
 
 <div class="card">
 <img src="https://images.unsplash.com/photo-1587614382346-4ec70e388b28">
 <div class="card-content">
 <h3>E-Cyber Services</h3>
 <a href="#booking" class="btn" onclick="setService('E-Cyber Services')">Book Now</a>
-</div></div>
+</div>
+</div>
+
 </div>
 </section>
 
 <section id="booking">
 <h2>Book a Service</h2>
 <form onsubmit="sendBoth(event)">
-<input type="text" id="contact" placeholder="Phone or Email (Required)" required>
+<input type="text" id="contact" placeholder="Phone or Email" required>
 <input type="text" id="service" readonly placeholder="Selected Service">
 <textarea id="description" placeholder="Describe your issue" required></textarea>
-<button class="btn" type="submit">Submit Booking</button>
+<button class="btn">Submit</button>
 </form>
 </section>
 
 <section id="contact">
-<h2>Contact Us</h2>
-<p><b>Email:</b> <a href="mailto:emmanueltechictsolutions@gmail.com">emmanueltechictsolutions@gmail.com</a></p>
-<p><b>Phone:</b> <a href="tel:+254716205974">0716205974</a></p>
-<p><b>Address:</b> <a href="https://www.google.com/maps/search/?api=1&query=Mwatate,+Kenya" target="_blank">Mwatate, Kenya</a></p>
-
-<h3>Send Message</h3>
-<form onsubmit="sendBoth(event)">
-<input type="text" id="contact2" placeholder="Phone or Email" required>
-<textarea id="message2" placeholder="Your message" required></textarea>
-<button class="btn">Send</button>
-</form>
-
-<iframe src="https://maps.google.com/maps?q=Mwatate%20Kenya&t=&z=13&ie=UTF8&iwloc=&output=embed" width="100%" height="300" style="border:0;margin-top:20px;"></iframe>
+<h2>Contact</h2>
+<p>Email: <a href="mailto:emmanueltechictsolutions@gmail.com">emmanueltechictsolutions@gmail.com</a></p>
+<p>Phone: <a href="tel:+254716205974">0716205974</a></p>
 </section>
 
 <footer>
@@ -275,33 +346,38 @@ text-decoration:none;
 <script>
 window.onload=()=>{document.getElementById('loader').style.display='none';};
 
-const text="We Fix Laptops, Printers & Networks";let i=0;function type(){if(i<text.length){document.getElementById('typing').innerHTML+=text.charAt(i);i++;setTimeout(type,50);}} type();
+const text="We Fix Laptops, Printers & Networks";
+let i=0;
+function type(){
+if(i<text.length){
+document.getElementById('typing').innerHTML+=text.charAt(i);
+i++;
+setTimeout(type,50);
+}}
+type();
 
-function toggleMode(){document.body.classList.toggle('dark');}
-function toggleMenu(){document.getElementById('navLinks').classList.toggle('active');}
-function setService(s){document.getElementById('service').value=s;}
+function toggleMenu(){
+document.getElementById('navLinks').classList.toggle('active');
+}
+
+function toggleMode(){
+document.body.classList.toggle('dark');
+}
+
+function setService(s){
+document.getElementById('service').value=s;
+}
 
 function sendBoth(e){
 e.preventDefault();
-let contact=document.getElementById('contact')?.value || document.getElementById('contact2').value;
-let service=document.getElementById('service')?.value || 'General Inquiry';
-let desc=document.getElementById('description')?.value || document.getElementById('message2').value;
+let contact=document.getElementById('contact').value;
+let service=document.getElementById('service').value;
+let desc=document.getElementById('description').value;
 
-let msg=`Hello Emmanuel Tech ICT Solutions,%0AContact:${contact}%0AService:${service}%0AMessage:${desc}`;
+let msg=`Hello Emmanuel Tech ICT Solutions,%0AContact:${contact}%0AService:${service}%0ADescription:${desc}`;
 
-// WhatsApp
-window.open(`https://wa.me/254716205974?text=${msg}`,'_blank');
-
-// Email
-window.location.href=`mailto:emmanueltechictsolutions@gmail.com?subject=Service Request&body=${msg}`;
+window.open(`https://wa.me/254716205974?text=${msg}`);
 }
-
-const sections=document.querySelectorAll('section');
-window.addEventListener('scroll',()=>{
-sections.forEach(sec=>{
-if(sec.getBoundingClientRect().top<window.innerHeight-100){sec.classList.add('show');}
-});
-});
 </script>
 
 </body>
