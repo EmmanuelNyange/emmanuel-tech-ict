@@ -12,11 +12,10 @@
 :root { --bg:#f4f6f9; --text:#000; --card:#fff; }
 body.dark { --bg:#0f172a; --text:#fff; --card:#1e293b; }
 
-body { margin:0; font-family:'Poppins',sans-serif; background:var(--bg); color:var(--text);} 
+body { margin:0; font-family:'Poppins',sans-serif; background:var(--bg); color:var(--text); padding-top:70px;} 
 
 #loader{position:fixed;width:100%;height:100%;background:#0a3d62;display:flex;justify-content:center;align-items:center;color:#fff;z-index:9999;}
 
-/* HEADER */
 header{position:relative;height:70vh;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;overflow:hidden;text-align:center;}
 header img{position:absolute;width:100%;height:100%;object-fit:cover;opacity:0;animation:fade 16s infinite;}
 header img:nth-child(1){animation-delay:0s;} 
@@ -24,22 +23,20 @@ header img:nth-child(2){animation-delay:4s;}
 header img:nth-child(3){animation-delay:8s;} 
 header img:nth-child(4){animation-delay:12s;}
 
-@keyframes fade{
-0%{opacity:0;}10%{opacity:1;}25%{opacity:1;}35%{opacity:0;}100%{opacity:0;}
-}
-
+@keyframes fade{0%{opacity:0;}10%{opacity:1;}25%{opacity:1;}35%{opacity:0;}100%{opacity:0;}}
 header h1, header p{z-index:2;}
 
-/* NAVBAR TOP */
+/* NAV FIXED */
 nav{
 position:fixed;
 top:0;
+left:0;
 width:100%;
 display:flex;
 justify-content:space-between;
 align-items:center;
 padding:15px 20px;
-background:rgba(0,0,0,0.6);
+background:#0a3d62;
 z-index:1000;
 }
 
@@ -57,20 +54,20 @@ color:#fff;
 cursor:pointer;
 }
 
-/* MOBILE NAV */
+/* MOBILE FIX */
 @media(max-width:768px){
+.menu-toggle{display:block;position:absolute;right:20px;top:15px;}
 .nav-links{
+display:none;
+flex-direction:column;
 position:absolute;
 top:60px;
 right:20px;
 background:#1e90ff;
-flex-direction:column;
 padding:15px;
 border-radius:8px;
-display:none;
 }
 .nav-links.active{display:flex;}
-.menu-toggle{display:block;position:absolute;right:20px;top:15px;}
 }
 
 section{padding:40px 20px;max-width:1100px;margin:auto;opacity:0;transform:translateY(40px);transition:0.8s;}
@@ -82,18 +79,19 @@ section.show{opacity:1;transform:translateY(0);}
 .card img{width:100%;height:160px;object-fit:cover;} 
 .card-content{text-align:center;padding:15px;} 
 
-.btn{display:inline-block;margin-top:10px;padding:10px 15px;background:#ff4757;color:#fff;border-radius:6px;text-decoration:none;} 
+.btn{display:inline-block;margin-top:10px;padding:10px 15px;background:#ff4757;color:#fff;border-radius:6px;text-decoration:none;border:none;} 
 
 form input,form textarea{width:100%;padding:10px;margin:8px 0;} 
 
 footer{background:#0a3d62;color:#fff;text-align:center;padding:20px;} 
 
-/* WhatsApp button fixed (no line issue) */
-.whatsapp-float{
+.whatsapp-float{position:fixed;bottom:20px;right:20px;background:#25D366;color:#fff;width:60px;height:60px;border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:30px;text-decoration:none;} 
+
+.call-float{
 position:fixed;
-bottom:20px;
+bottom:90px;
 right:20px;
-background:#25D366;
+background:#1e90ff;
 color:#fff;
 width:60px;
 height:60px;
@@ -101,14 +99,11 @@ border-radius:50%;
 display:flex;
 justify-content:center;
 align-items:center;
-font-size:30px;
+font-size:26px;
 text-decoration:none;
 }
 
 .toggle{position:fixed;top:20px;left:20px;background:#fff;padding:10px;cursor:pointer;z-index:1000;}
-
-/* spacing fix due to fixed nav */
-body{padding-top:70px;}
 </style>
 </head>
 
@@ -131,7 +126,6 @@ body{padding-top:70px;}
 <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085">
 <img src="https://images.unsplash.com/photo-1537432376769-00aabc1a4f6b">
 <img src="https://images.unsplash.com/photo-1600267165477-6d4a04c35b46">
-
 <h1>Emmanuel Tech ICT Solutions</h1>
 <p id="typing"></p>
 </header>
@@ -139,7 +133,6 @@ body{padding-top:70px;}
 <section id="services">
 <h2>Our Services</h2>
 <div class="services-grid">
-
 <div class="card">
 <img src="https://images.unsplash.com/photo-1552664730-d307ca884978">
 <div class="card-content">
@@ -167,13 +160,12 @@ body{padding-top:70px;}
 <h3>E-Cyber Services</h3>
 <a href="#booking" class="btn" onclick="setService('E-Cyber Services')">Book Now</a>
 </div></div>
-
 </div>
 </section>
 
 <section id="booking">
 <h2>Book a Service</h2>
-<form onsubmit="sendToWhatsApp(event)">
+<form onsubmit="sendBoth(event)">
 <input type="text" id="contact" placeholder="Phone or Email (Required)" required>
 <input type="text" id="service" readonly placeholder="Selected Service">
 <textarea id="description" placeholder="Describe your issue" required></textarea>
@@ -186,6 +178,15 @@ body{padding-top:70px;}
 <p><b>Email:</b> <a href="mailto:emmanueltechictsolutions@gmail.com">emmanueltechictsolutions@gmail.com</a></p>
 <p><b>Phone:</b> <a href="tel:+254716205974">0716205974</a></p>
 <p><b>Address:</b> <a href="https://www.google.com/maps/search/?api=1&query=Mwatate,+Kenya" target="_blank">Mwatate, Kenya</a></p>
+
+<h3>Send Message</h3>
+<form onsubmit="sendBoth(event)">
+<input type="text" id="contact2" placeholder="Phone or Email" required>
+<textarea id="message2" placeholder="Your message" required></textarea>
+<button class="btn">Send</button>
+</form>
+
+<iframe src="https://maps.google.com/maps?q=Mwatate%20Kenya&t=&z=13&ie=UTF8&iwloc=&output=embed" width="100%" height="300" style="border:0;margin-top:20px;"></iframe>
 </section>
 
 <footer>
@@ -193,6 +194,7 @@ body{padding-top:70px;}
 </footer>
 
 <a href="https://wa.me/254716205974" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
+<a href="tel:+254716205974" class="call-float"><i class="fas fa-phone"></i></a>
 
 <script>
 window.onload=()=>{document.getElementById('loader').style.display='none';};
@@ -201,23 +203,27 @@ const text="We Fix Laptops, Printers & Networks";let i=0;function type(){if(i<te
 
 function toggleMode(){document.body.classList.toggle('dark');}
 function toggleMenu(){document.getElementById('navLinks').classList.toggle('active');}
-function setService(serviceName){document.getElementById('service').value=serviceName;}
+function setService(s){document.getElementById('service').value=s;}
 
-function sendToWhatsApp(e){
+function sendBoth(e){
 e.preventDefault();
-let contact=document.getElementById('contact').value;
-let service=document.getElementById('service').value;
-let description=document.getElementById('description').value;
-let msg=`Hello Emmanuel Tech ICT Solutions,%0AContact:${contact}%0AService:${service}%0ADescription:${description}`;
+let contact=document.getElementById('contact')?.value || document.getElementById('contact2').value;
+let service=document.getElementById('service')?.value || 'General Inquiry';
+let desc=document.getElementById('description')?.value || document.getElementById('message2').value;
+
+let msg=`Hello Emmanuel Tech ICT Solutions,%0AContact:${contact}%0AService:${service}%0AMessage:${desc}`;
+
+// WhatsApp
 window.open(`https://wa.me/254716205974?text=${msg}`,'_blank');
+
+// Email
+window.location.href=`mailto:emmanueltechictsolutions@gmail.com?subject=Service Request&body=${msg}`;
 }
 
 const sections=document.querySelectorAll('section');
 window.addEventListener('scroll',()=>{
 sections.forEach(sec=>{
-if(sec.getBoundingClientRect().top<window.innerHeight-100){
-sec.classList.add('show');
-}
+if(sec.getBoundingClientRect().top<window.innerHeight-100){sec.classList.add('show');}
 });
 });
 </script>
