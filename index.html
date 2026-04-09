@@ -16,23 +16,61 @@ body { margin:0; font-family:'Poppins',sans-serif; background:var(--bg); color:v
 
 #loader{position:fixed;width:100%;height:100%;background:#0a3d62;display:flex;justify-content:center;align-items:center;color:#fff;z-index:9999;}
 
-header{position:relative;height:60vh;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;overflow:hidden;}
+/* HEADER */
+header{position:relative;height:70vh;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;overflow:hidden;text-align:center;}
 header img{position:absolute;width:100%;height:100%;object-fit:cover;opacity:0;animation:fade 16s infinite;}
-header img:nth-child(1){animation-delay:0s;} header img:nth-child(2){animation-delay:4s;} header img:nth-child(3){animation-delay:8s;} header img:nth-child(4){animation-delay:12s;}
-@keyframes fade{0%{opacity:0;}10%{opacity:1;}25%{opacity:1;}35%{opacity:0;}100%{opacity:0;}}
-header h1,header p{z-index:2;}
+header img:nth-child(1){animation-delay:0s;} 
+header img:nth-child(2){animation-delay:4s;} 
+header img:nth-child(3){animation-delay:8s;} 
+header img:nth-child(4){animation-delay:12s;}
 
-/* NAV */
-nav{background:#1e90ff;display:flex;justify-content:space-between;align-items:center;padding:15px 20px;}
-.nav-links{display:flex;gap:20px;}
-nav a{color:#fff;text-decoration:none;}
-.menu-toggle{display:none;font-size:24px;color:white;cursor:pointer;}
+@keyframes fade{
+0%{opacity:0;}10%{opacity:1;}25%{opacity:1;}35%{opacity:0;}100%{opacity:0;}
+}
 
-/* Mobile */
+header h1, header p{z-index:2;}
+
+/* NAVBAR TOP */
+nav{
+position:fixed;
+top:0;
+width:100%;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px 20px;
+background:rgba(0,0,0,0.6);
+z-index:1000;
+}
+
+.nav-links{
+display:flex;
+gap:20px;
+}
+
+nav a{color:#fff;text-decoration:none;font-weight:500;}
+
+.menu-toggle{
+display:none;
+font-size:26px;
+color:#fff;
+cursor:pointer;
+}
+
+/* MOBILE NAV */
 @media(max-width:768px){
-  .nav-links{display:none;flex-direction:column;background:#1e90ff;position:absolute;top:60px;right:0;width:200px;padding:20px;}
-  .nav-links.active{display:flex;}
-  .menu-toggle{display:block;}
+.nav-links{
+position:absolute;
+top:60px;
+right:20px;
+background:#1e90ff;
+flex-direction:column;
+padding:15px;
+border-radius:8px;
+display:none;
+}
+.nav-links.active{display:flex;}
+.menu-toggle{display:block;position:absolute;right:20px;top:15px;}
 }
 
 section{padding:40px 20px;max-width:1100px;margin:auto;opacity:0;transform:translateY(40px);transition:0.8s;}
@@ -50,8 +88,27 @@ form input,form textarea{width:100%;padding:10px;margin:8px 0;}
 
 footer{background:#0a3d62;color:#fff;text-align:center;padding:20px;} 
 
-.whatsapp-float{position:fixed;bottom:20px;right:20px;background:#25D366;color:#fff;width:60px;height:60px;border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:30px;} 
-.toggle{position:fixed;top:20px;right:20px;background:#fff;padding:10px;cursor:pointer;} 
+/* WhatsApp button fixed (no line issue) */
+.whatsapp-float{
+position:fixed;
+bottom:20px;
+right:20px;
+background:#25D366;
+color:#fff;
+width:60px;
+height:60px;
+border-radius:50%;
+display:flex;
+justify-content:center;
+align-items:center;
+font-size:30px;
+text-decoration:none;
+}
+
+.toggle{position:fixed;top:20px;left:20px;background:#fff;padding:10px;cursor:pointer;z-index:1000;}
+
+/* spacing fix due to fixed nav */
+body{padding-top:70px;}
 </style>
 </head>
 
@@ -59,15 +116,6 @@ footer{background:#0a3d62;color:#fff;text-align:center;padding:20px;}
 
 <div id="loader">Loading...</div>
 <div class="toggle" onclick="toggleMode()">🌓</div>
-
-<header>
-<img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c">
-<img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085">
-<img src="https://images.unsplash.com/photo-1537432376769-00aabc1a4f6b">
-<img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b">
-<h1>Emmanuel Tech ICT Solutions</h1>
-<p id="typing"></p>
-</header>
 
 <nav>
 <div class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
@@ -77,6 +125,16 @@ footer{background:#0a3d62;color:#fff;text-align:center;padding:20px;}
 <a href="#contact">Contact</a>
 </div>
 </nav>
+
+<header>
+<img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c">
+<img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085">
+<img src="https://images.unsplash.com/photo-1537432376769-00aabc1a4f6b">
+<img src="https://images.unsplash.com/photo-1600267165477-6d4a04c35b46">
+
+<h1>Emmanuel Tech ICT Solutions</h1>
+<p id="typing"></p>
+</header>
 
 <section id="services">
 <h2>Our Services</h2>
@@ -125,9 +183,9 @@ footer{background:#0a3d62;color:#fff;text-align:center;padding:20px;}
 
 <section id="contact">
 <h2>Contact Us</h2>
-<p><b>Email:</b> emmanueltechictsolutions@gmail.com</p>
-<p><b>Phone:</b> 0716205974</p>
-<p><b>Address:</b> Mwatate, Kenya</p>
+<p><b>Email:</b> <a href="mailto:emmanueltechictsolutions@gmail.com">emmanueltechictsolutions@gmail.com</a></p>
+<p><b>Phone:</b> <a href="tel:+254716205974">0716205974</a></p>
+<p><b>Address:</b> <a href="https://www.google.com/maps/search/?api=1&query=Mwatate,+Kenya" target="_blank">Mwatate, Kenya</a></p>
 </section>
 
 <footer>
@@ -142,20 +200,26 @@ window.onload=()=>{document.getElementById('loader').style.display='none';};
 const text="We Fix Laptops, Printers & Networks";let i=0;function type(){if(i<text.length){document.getElementById('typing').innerHTML+=text.charAt(i);i++;setTimeout(type,50);}} type();
 
 function toggleMode(){document.body.classList.toggle('dark');}
-
 function toggleMenu(){document.getElementById('navLinks').classList.toggle('active');}
-
 function setService(serviceName){document.getElementById('service').value=serviceName;}
 
-function sendToWhatsApp(e){e.preventDefault();
+function sendToWhatsApp(e){
+e.preventDefault();
 let contact=document.getElementById('contact').value;
 let service=document.getElementById('service').value;
 let description=document.getElementById('description').value;
 let msg=`Hello Emmanuel Tech ICT Solutions,%0AContact:${contact}%0AService:${service}%0ADescription:${description}`;
-window.open(`https://wa.me/254716205974?text=${msg}`,'_blank');}
+window.open(`https://wa.me/254716205974?text=${msg}`,'_blank');
+}
 
 const sections=document.querySelectorAll('section');
-window.addEventListener('scroll',()=>{sections.forEach(sec=>{if(sec.getBoundingClientRect().top<window.innerHeight-100){sec.classList.add('show');}});});
+window.addEventListener('scroll',()=>{
+sections.forEach(sec=>{
+if(sec.getBoundingClientRect().top<window.innerHeight-100){
+sec.classList.add('show');
+}
+});
+});
 </script>
 
 </body>
