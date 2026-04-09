@@ -101,27 +101,35 @@ nav a:hover::after { width:100%; }
         border-radius:6px;
     }
 
-    .nav-links{
-        display:none;
-        flex-direction:column;
-        position:fixed;
-        top:65px;
-        right:15px;
-        width:200px;
-        background:rgba(30,144,255,0.95);
-        padding:15px;
-        border-radius:10px;
-        box-shadow:0 10px 25px rgba(0,0,0,0.3);
-        z-index:1500;
-    }
+nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    display: flex;
+    align-items: center;
+    padding: 0 40px;
+    background: rgba(10, 61, 98, 0.85);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+}
+
+.nav-links {
+    display: flex;
+    gap: 30px;
+    margin-left: auto;
+    margin-right: 80px; /* controls how far from edge */
+}
 
     .nav-links.active{
         display:flex;
     }
 
     .nav-links a{
-        padding:10px 0;
-        color:white;
+        padding:12px 0;
+        font-size:16px;
+        white-space:nowrap; /* prevents breaking */
     }
 }
 
@@ -138,26 +146,26 @@ header{
     overflow:hidden;
 }
 
-header img{
-    position:absolute;
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    opacity:0;
-    animation:fade 16s infinite;
+header img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    animation: fade 16s infinite;
+     transition: opacity 1s ease-in-out;
 }
 
-header img:nth-child(1){animation-delay:0s;}
-header img:nth-child(2){animation-delay:4s;}
-header img:nth-child(3){animation-delay:8s;}
-header img:nth-child(4){animation-delay:12s;}
-
-@keyframes fade{
-0%{opacity:0;}
-10%{opacity:1;}
-25%{opacity:1;}
-35%{opacity:0;}
-100%{opacity:0;}
+header img:nth-child(1){ animation-delay: 0s; }
+header img:nth-child(2){ animation-delay: 4s; }
+header img:nth-child(3){ animation-delay: 8s; }
+header img:nth-child(4){ animation-delay: 12s; }
+@keyframes fade {
+    0%   { opacity: 0; }
+    5%   { opacity: 1; }
+    25%  { opacity: 1; }
+    30%  { opacity: 0; }
+    100% { opacity: 0; }
 }
 
 header h1, header p { z-index:2; }
@@ -286,8 +294,8 @@ footer{
 <header>
 <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c">
 <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085">
-<img src="https://images.unsplash.com/photo-1537432376769-00aabc1a4f6b">
-<img src="https://images.unsplash.com/photo-1526378722484-bd91ca387e72">
+<img src="https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200">
+<img src="https://images.unsplash.com/photo-1526378722484-bd91ca387e72"> 
 
 <h1>Emmanuel Tech ICT Solutions</h1>
 <p id="typing"></p>
