@@ -9,308 +9,153 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
-body {
-    font-family: 'Poppins', sans-serif;
-    margin: 0;
-    background: #f4f6f9;
+:root { --bg:#f4f6f9; --text:#000; --card:#fff; }
+body.dark { --bg:#0f172a; --text:#fff; --card:#1e293b; }
+
+body { margin:0; font-family:'Poppins',sans-serif; background:var(--bg); color:var(--text);} 
+
+#loader{position:fixed;width:100%;height:100%;background:#0a3d62;display:flex;justify-content:center;align-items:center;color:#fff;z-index:9999;}
+
+header{position:relative;height:60vh;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;overflow:hidden;}
+header img{position:absolute;width:100%;height:100%;object-fit:cover;opacity:0;animation:fade 16s infinite;}
+header img:nth-child(1){animation-delay:0s;} header img:nth-child(2){animation-delay:4s;} header img:nth-child(3){animation-delay:8s;} header img:nth-child(4){animation-delay:12s;}
+@keyframes fade{0%{opacity:0;}10%{opacity:1;}25%{opacity:1;}35%{opacity:0;}100%{opacity:0;}}
+header h1,header p{z-index:2;}
+
+/* NAV */
+nav{background:#1e90ff;display:flex;justify-content:space-between;align-items:center;padding:15px 20px;}
+.nav-links{display:flex;gap:20px;}
+nav a{color:#fff;text-decoration:none;}
+.menu-toggle{display:none;font-size:24px;color:white;cursor:pointer;}
+
+/* Mobile */
+@media(max-width:768px){
+  .nav-links{display:none;flex-direction:column;background:#1e90ff;position:absolute;top:60px;right:0;width:200px;padding:20px;}
+  .nav-links.active{display:flex;}
+  .menu-toggle{display:block;}
 }
 
-header {
-    background: linear-gradient(rgba(10,61,98,0.8), rgba(10,61,98,0.8)), url('https://images.unsplash.com/photo-1519389950473-47ba0277781c');
-    background-size: cover;
-    color: white;
-    text-align: center;
-    padding: 60px 20px;
-}
+section{padding:40px 20px;max-width:1100px;margin:auto;opacity:0;transform:translateY(40px);transition:0.8s;}
+section.show{opacity:1;transform:translateY(0);} 
 
-nav {
-    background: #1e90ff;
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    padding: 15px;
-}
+.services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;}
+.card{background:var(--card);border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);overflow:hidden;transition:0.3s;}
+.card:hover{transform:translateY(-8px);} 
+.card img{width:100%;height:160px;object-fit:cover;} 
+.card-content{text-align:center;padding:15px;} 
 
-nav a { color: white; text-decoration: none; font-weight: 600; }
+.btn{display:inline-block;margin-top:10px;padding:10px 15px;background:#ff4757;color:#fff;border-radius:6px;text-decoration:none;} 
 
-section {
-    padding: 40px 20px;
-    max-width: 1100px;
-    margin: auto;
-    opacity: 0;
-    transform: translateY(40px);
-    transition: all 0.8s ease;
-}
+form input,form textarea{width:100%;padding:10px;margin:8px 0;} 
 
-section.show {
-    opacity: 1;
-    transform: translateY(0);
-}
+footer{background:#0a3d62;color:#fff;text-align:center;padding:20px;} 
 
-.services-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-}
-
-.card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    overflow: hidden;
-    transition: 0.4s ease;
-}
-
-.card:hover {
-    transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-}
-
-.card img { width: 100%; height: 160px; object-fit: cover; }
-
-.card-content { padding: 15px; text-align: center; }
-
-.card i {
-    font-size: 30px;
-    margin-bottom: 10px;
-    color: #1e90ff;
-}
-
-.btn {
-    display: inline-block;
-    margin-top: 10px;
-    padding: 10px 15px;
-    background: #ff4757;
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    transition: 0.3s;
-    
-}
-
-.btn:hover { background: #e84118; }
-
-.gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
-}
-
-.gallery img { width: 100%; border-radius: 10px; }
-
-.testimonials {
-    display: grid;
-    gap: 20px;
-}
-
-.testimonial {
-    background: white;
-    padding: 20px;
-    border-left: 5px solid #1e90ff;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-form input, form textarea {
-    width: 100%;
-    padding: 10px;
-    margin: 8px 0;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-}
-
-footer {
-    background: #0a3d62;
-    color: white;
-    text-align: center;
-    padding: 20px;
-}
-
-/* Floating WhatsApp Button */
-.whatsapp-float {
-    position: fixed;
-    width: 60px;
-    height: 60px;
-    bottom: 20px;
-    right: 20px;
-    background: #25D366;
-    color: white;
-    border-radius: 50%;
-    text-align: center;
-    font-size: 30px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    z-index: 100;
-}
-
-.whatsapp-float i {
-    margin-top: 15px;
-}
-
-.whatsapp-float:hover {
-    background: #1ebe5d;
-}
+.whatsapp-float{position:fixed;bottom:20px;right:20px;background:#25D366;color:#fff;width:60px;height:60px;border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:30px;} 
+.toggle{position:fixed;top:20px;right:20px;background:#fff;padding:10px;cursor:pointer;} 
 </style>
 </head>
 
 <body>
 
+<div id="loader">Loading...</div>
+<div class="toggle" onclick="toggleMode()">🌓</div>
+
 <header>
-    <h1>Emmanuel Tech ICT Solutions</h1>
-    <p>Your Tech Partner</p>
+<img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c">
+<img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085">
+<img src="https://images.unsplash.com/photo-1537432376769-00aabc1a4f6b">
+<img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b">
+<h1>Emmanuel Tech ICT Solutions</h1>
+<p id="typing"></p>
 </header>
 
 <nav>
-    <a href="#">Home</a>
-    <a href="#services">Services</a>
-    <a href="#gallery">Gallery</a>
-    <a href="#booking">Book</a>
+<div class="menu-toggle" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+<div class="nav-links" id="navLinks">
+<a href="#">Home</a>
+<a href="#services">Services</a>
+<a href="#contact">Contact</a>
+</div>
 </nav>
 
-<section>
-    <h2>About Us</h2>
-    <p>We are tech company located at Mwatate, Kenya. We offer Fast, reliable and affordable ICT services.</p>
-
-    <h2>Our Vision</h2>
-    <p><i>To become a leading provider of innovative and affordable ICT solutions that empower individuals, businesses, and institutions to thrive in the digital era.</i></p>
-
-
-</section>
-
 <section id="services">
-    <h2>Our Services</h2>
-    <div class="services-grid">
+<h2>Our Services</h2>
+<div class="services-grid">
 
-        <div class="card">
-            <img src="https://images.unsplash.com/photo-1593642532973-d31b6557fa68">
-            <div class="card-content">
-                <i class="fas fa-paint-brush"></i>
-                <h3>Graphics Design</h3>
-                <a href="#booking" class="btn" onclick="setService('Graphics Design')">Book Now</a>
-            </div>
-        </div>
+<div class="card">
+<img src="https://images.unsplash.com/photo-1552664730-d307ca884978">
+<div class="card-content">
+<h3>ICT Consulting</h3>
+<a href="#booking" class="btn" onclick="setService('ICT Consulting')">Book Now</a>
+</div></div>
 
-        <div class="card">
-            <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8">
-            <div class="card-content">
-                <i class="fas fa-laptop"></i>
-                <h3>Laptop & Desktop Repair</h3>
-                <a href="#booking" class="btn" onclick="setService('Laptop/Desktop Repair')">Book Now</a>
-            </div>
-        </div>
+<div class="card">
+<img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8">
+<div class="card-content">
+<h3>Computer & Printer Repairs</h3>
+<a href="#booking" class="btn" onclick="setService('Computer & Printer Repairs')">Book Now</a>
+</div></div>
 
-        <div class="card">
-            <img src="https://images.unsplash.com/photo-1580894908361-967195033215">
-            <div class="card-content">
-                <i class="fas fa-print"></i>
-                <h3>Printer Repair</h3>
-                <a href="#booking" class="btn" onclick="setService('Printer Repair')">Book Now</a>
-            </div>
-        </div>
+<div class="card">
+<img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0">
+<div class="card-content">
+<h3>Graphics Design</h3>
+<a href="#booking" class="btn" onclick="setService('Graphics Design')">Book Now</a>
+</div></div>
 
-        <div class="card">
-            <img src="https://images.unsplash.com/photo-1552664730-d307ca884978">
-            <div class="card-content">
-                <i class="fas fa-network-wired"></i>
-                <h3>ICT Consulting</h3>
-                <a href="#booking" class="btn" onclick="setService('ICT Consulting')">Book Now</a>
-            </div>
-        </div>
+<div class="card">
+<img src="https://images.unsplash.com/photo-1587614382346-4ec70e388b28">
+<div class="card-content">
+<h3>E-Cyber Services</h3>
+<a href="#booking" class="btn" onclick="setService('E-Cyber Services')">Book Now</a>
+</div></div>
 
-        <div class="card">
-            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f">
-            <div class="card-content">
-                <i class="fas fa-chart-line"></i>
-                <h3>SEO Marketing</h3>
-                <a href="#booking" class="btn" onclick="setService('SEO Marketing')">Book Now</a>
-            </div>
-        </div>
-
-    </div>
-</section>
-
-<section id="gallery">
-    <h2>Before & After Repairs</h2>
-    <div class="gallery">
-        <img src="https://images.unsplash.com/photo-1587202372775-e229f172b9d7">
-        <img src="https://images.unsplash.com/photo-1593642532973-d31b6557fa68">
-        <img src="https://images.unsplash.com/photo-1581092334651-ddf26d9a09d0">
-    </div>
-</section>
-
-<section>
-    <h2>What Our Clients Say</h2>
-    <div class="testimonials">
-        <div class="testimonial">
-            <p>"Very fast service! My laptop was fixed within hours."</p>
-            <b>- John K.</b>
-        </div>
-        <div class="testimonial">
-            <p>"Affordable and professional. Highly recommend!"</p>
-            <b>- Mary W.</b>
-        </div>
-        <div class="testimonial">
-            <p>"Best ICT support in town. Reliable and trustworthy."</p>
-            <b>- David M.</b>
-        </div>
-    </div>
+</div>
 </section>
 
 <section id="booking">
-    <h2>Book a Service</h2>
-    <form onsubmit="sendToWhatsApp(event)">
-        <input type="text" id="name" placeholder="Your Name" required>
-        <input type="text" id="contact" placeholder="Phone or Email" required>
-        <input type="text" id="service" placeholder="Service"  required >
-        <textarea id="description" placeholder="Describe your issue" required></textarea>
-        <button type="submit" class="btn">Submit Booking</button>
-    </form>
+<h2>Book a Service</h2>
+<form onsubmit="sendToWhatsApp(event)">
+<input type="text" id="contact" placeholder="Phone or Email (Required)" required>
+<input type="text" id="service" readonly placeholder="Selected Service">
+<textarea id="description" placeholder="Describe your issue" required></textarea>
+<button class="btn" type="submit">Submit Booking</button>
+</form>
+</section>
+
+<section id="contact">
+<h2>Contact Us</h2>
+<p><b>Email:</b> emmanueltechictsolutions@gmail.com</p>
+<p><b>Phone:</b> 0716205974</p>
+<p><b>Address:</b> Mwatate, Kenya</p>
 </section>
 
 <footer>
-    <p>© 2026 Emmanuel Tech ICT Solutions</p>
+<p>© 2026 Emmanuel Tech ICT Solutions</p>
 </footer>
 
-<!-- Floating WhatsApp Button -->
-<a href="https://wa.me/254716205974" class="whatsapp-float" target="_blank">
-    <i class="fab fa-whatsapp"></i>
-</a>
+<a href="https://wa.me/254716205974" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
 
 <script>
-function setService(serviceName) {
-    document.getElementById("service").value = serviceName;
-}
+window.onload=()=>{document.getElementById('loader').style.display='none';};
 
-function sendToWhatsApp(event) {
-    event.preventDefault();
+const text="We Fix Laptops, Printers & Networks";let i=0;function type(){if(i<text.length){document.getElementById('typing').innerHTML+=text.charAt(i);i++;setTimeout(type,50);}} type();
 
-    let name = document.getElementById("name").value;
-    let contact = document.getElementById("contact").value;
-    let service = document.getElementById("service").value;
-    let description = document.getElementById("description").value;
+function toggleMode(){document.body.classList.toggle('dark');}
 
-    let message = `Hello Emmanuel Tech ICT Solutions,%0A%0A`
-        + `Name: ${name}%0A`
-        + `Contact: ${contact}%0A`
-        + `Service: ${service}%0A`
-        + `Issue: ${description}`;
+function toggleMenu(){document.getElementById('navLinks').classList.toggle('active');}
 
-    let phone = "254716205974";
-    let url = `https://wa.me/${phone}?text=${message}`;
+function setService(serviceName){document.getElementById('service').value=serviceName;}
 
-    window.open(url, "_blank");
-}
+function sendToWhatsApp(e){e.preventDefault();
+let contact=document.getElementById('contact').value;
+let service=document.getElementById('service').value;
+let description=document.getElementById('description').value;
+let msg=`Hello Emmanuel Tech ICT Solutions,%0AContact:${contact}%0AService:${service}%0ADescription:${description}`;
+window.open(`https://wa.me/254716205974?text=${msg}`,'_blank');}
 
-// Scroll Animation
-const sections = document.querySelectorAll("section");
-
-window.addEventListener("scroll", () => {
-    sections.forEach(sec => {
-        const top = sec.getBoundingClientRect().top;
-        if (top < window.innerHeight - 100) {
-            sec.classList.add("show");
-        }
-    });
-});
+const sections=document.querySelectorAll('section');
+window.addEventListener('scroll',()=>{sections.forEach(sec=>{if(sec.getBoundingClientRect().top<window.innerHeight-100){sec.classList.add('show');}});});
 </script>
 
 </body>
