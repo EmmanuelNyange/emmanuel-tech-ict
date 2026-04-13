@@ -90,7 +90,6 @@ nav a:hover::after { width:100%; }
 /* MOBILE NAV FIX */
 @media(max-width:768px){
 
-
 .nav-links {
     display: flex;
     gap: 15px;
@@ -365,15 +364,30 @@ function setService(s){
 document.getElementById('service').value=s;
 }
 
-function sendBoth(e){
-e.preventDefault();
-let contact=document.getElementById('contact').value;
-let service=document.getElementById('service').value;
-let desc=document.getElementById('description').value;
+async function sendBoth(e){
+    e.preventDefault();
+    let contact=document.getElementById('contact').value;
+    let service=document.getElementById('service').value;
+    let desc=document.getElementById('description').value;
 
-let msg=`Hello Emmanuel Tech ICT Solutions,%0AContact:${contact}%0AService:${service}%0ADescription:${desc}`;
+    const payload = {
+        contact,
+        service,
+        description: desc
+    };
 
-window.open(`https://wa.me/254716205974?text=${msg}`);
+    try {
+        await fetch('http://127.0.0.1:5000/book', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    } catch (err) {
+        console.error('Unable to save booking to Python backend:', err);
+    }
+
+    let msg=`Hello Emmanuel Tech ICT Solutions,%0AContact:${contact}%0AService:${service}%0ADescription:${desc}`;
+    window.open(`https://wa.me/254716205974?text=${msg}`);
 }
 </script>
 
