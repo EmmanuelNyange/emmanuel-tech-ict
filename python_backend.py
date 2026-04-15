@@ -4,9 +4,10 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-DB_PATH = Path(__file__).with_name("emmanuel_tech.db")
+BASE_DIR = Path(__file__).parent
+DB_PATH = BASE_DIR / "emmanuel_tech.db"
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=str(BASE_DIR), static_url_path="")
 CORS(app)
 
 
@@ -58,7 +59,10 @@ def bookings():
         rows = conn.execute("SELECT * FROM bookings ORDER BY created_at DESC").fetchall()
         return jsonify([dict(row) for row in rows])
 
+@app.route("/")
+def index():
+    return app.send_static_file("index.html")
 
 if __name__ == "__main__":
     init_db()
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=5001, debug=True)
