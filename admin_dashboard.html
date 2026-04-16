@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | Emmanuel Tech ICT</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Poppins',sans-serif;background:#f4f6f9;color:#111;}
+header{background:#0a3d62;color:#fff;padding:24px 28px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+header h1{margin:0;font-size:22px;}
+button{border:none;border-radius:10px;padding:12px 18px;color:#fff;background:#ff4757;cursor:pointer;font-size:14px;}
+button.back-button{background:#475569;}
+button.action-button{background:#0a3d62;margin:0 4px 6px 0;font-size:13px;}
+button.action-button.delete{background:#b91c1c;}
+button.action-button.hidden{display:none;}
+main{padding:24px;max-width:1400px;margin:auto;}
+.table-wrap{overflow-x:auto;background:#fff;border-radius:18px;box-shadow:0 18px 45px rgba(0,0,0,.08);}
+table{width:100%;border-collapse:collapse;min-width:1100px;}
+th,td{padding:14px 12px;text-align:left;border-bottom:1px solid #e5e7eb;vertical-align:top;}
+th{background:#f8fafc;color:#0f172a;}
+.status-pill{display:inline-flex;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;}
+.status-pill.new{background:#ddeafb;color:#0f172a;}
+.status-pill.attended{background:#e6f4ea;color:#0f5132;}
+.status-pill.done{background:#fde2e1;color:#991b1b;}
+.editing{outline:1px solid #0a3d62;background:#f8fafc;}
+.no-data{padding:24px;text-align:center;color:#475569;}
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <button class="back-button" onclick="window.location.href='/'">Back to site</button>
+    <h1>Admin Dashboard</h1>
+  </div>
+  <button onclick="logout()">Logout</button>
+</header>
+<main>
+  <section>
+    <h2>Saved Bookings</h2>
+    <div id="count"></div>
+    <div class="table-wrap" id="tableWrap"></div>
+  </section>
+</main>
+<script>
+const statusLabels = {
+  new: 'New',
+  attended: 'Attended',
+  done: 'Done'
+};
+
+function getNextStatus(current) {
+  if (current === 'new') return 'attended';
+  if (current === 'attended') return 'done';
+  return 'new';
+}
+
+function getStatusActionLabel(current) {
+  if (current === 'new') return 'Mark Attended';
+  if (current === 'attended') return 'Mark Done';
+  return 'Reset';
+}
+
+async function loadBookings(){
+  const response = await fetch('/admin/bookings');
+  if (response.status === 401) {
+    window.location.href = '/admin/login';
+    return;
+  }
+
+  const bookings = await response.json();
+  const tableWrap = document.getElementById('tableWrap');
+  const count = document.getElementById('count');
+
+  if (!bookings.length) {
+    count.textContent = 'No bookings saved yet.';
+    tableWrap.innerHTML = '<div class="no-data">No bookings available.</div>';
+    return;
+  }
+
+  count.textContent = bookings.length + ' booking(s) found.';
+  const rows = bookings.map(b => {
+    const status = b.status || 'new';
+    return `
+      <tr data-id="${b.id}">
+        <td>${b.id}</td>
+        <td class="editable" data-field="contact">${escapeHtml(b.contact)}</td>
+        <td class="editable" data-field="service">${escapeHtml(b.service || '')}</td>
+        <td class="editable" data-field="description">${escapeHtml(b.description)}</td>
+        <td><span class="status-pill ${escapeHtml(status)}">${statusLabels[status] || statusLabels.new}</span></td>
+        <td class="editable" data-field="notes">${escapeHtml(b.notes || '')}</td>
+        <td>${escapeHtml(b.created_at)}</td>
+        <td>
+          <button class="action-button" onclick="toggleEdit(this)">Edit</button>
+          <button class="action-button hidden save" onclick="saveBooking(this)">Save</button>
+          <button class="action-button" onclick="toggleStatus(this)">${getStatusActionLabel(status)}</button>
+          <button class="action-button" onclick="messageClient(this)">Message</button>
+          <button class="action-button delete" onclick="deleteBooking(this)">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  tableWrap.innerHTML = `
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Contact</th><th>Service</th><th>Description</th><th>Status</th><th>Notes</th><th>Created At</th><th>Actions</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>\"]/g, function(m) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]);
+  });
+}
+
+function setRowEditable(row, editable) {
+  row.querySelectorAll('td.editable').forEach(cell => {
+    cell.contentEditable = editable;
+    cell.classList.toggle('editing', editable);
+  });
+}
+
+function toggleEdit(button) {
+  const row = button.closest('tr');
+  const saveButton = row.querySelector('button.save');
+  const editing = button.textContent === 'Cancel';
+
+  if (editing) {
+    setRowEditable(row, false);
+    button.textContent = 'Edit';
+    saveButton.classList.add('hidden');
+    loadBookings();
+  } else {
+    setRowEditable(row, true);
+    button.textContent = 'Cancel';
+    saveButton.classList.remove('hidden');
+  }
+}
+
+async function saveBooking(button) {
+  const row = button.closest('tr');
+  const bookingId = row.dataset.id;
+  const updateData = {};
+
+  row.querySelectorAll('td.editable').forEach(cell => {
+    const field = cell.dataset.field;
+    updateData[field] = cell.textContent.trim();
+  });
+
+  const response = await fetch(`/admin/bookings/${bookingId}`, {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(updateData)
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    alert(error.error || 'Unable to save changes.');
+    return;
+  }
+
+  setRowEditable(row, false);
+  row.querySelector('button.save').classList.add('hidden');
+  row.querySelector('button').textContent = 'Edit';
+  loadBookings();
+}
+
+async function toggleStatus(button) {
+  const row = button.closest('tr');
+  const bookingId = row.dataset.id;
+  const statusCell = row.querySelector('.status-pill');
+  const currentStatus = statusCell.textContent.trim().toLowerCase();
+  const nextStatus = getNextStatus(currentStatus);
+
+  const response = await fetch(`/admin/bookings/${bookingId}`, {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({status: nextStatus})
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    alert(error.error || 'Unable to update status.');
+    return;
+  }
+
+  statusCell.textContent = statusLabels[nextStatus] || nextStatus;
+  statusCell.className = `status-pill ${nextStatus}`;
+  button.textContent = getStatusActionLabel(nextStatus);
+}
+
+function formatMessage(contact, service, description, channel) {
+  const message = `Hello Emmanuel Tech ICT Solutions,%0A%0AService: ${service}%0ADescription: ${description}`;
+
+  if (channel === 'email') {
+    return `mailto:${encodeURIComponent(contact)}?subject=${encodeURIComponent('Service update')}&body=${encodeURIComponent(message)}`;
+  }
+
+  if (channel === 'sms') {
+    const digits = contact.replace(/\D/g, '');
+    const phone = digits.startsWith('0') ? '254' + digits.slice(1) : digits;
+    return `sms:${phone}?body=${encodeURIComponent(message)}`;
+  }
+
+  const digits = contact.replace(/\D/g, '');
+  const phone = digits.startsWith('0') ? '254' + digits.slice(1) : digits;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+function messageClient(button) {
+  const row = button.closest('tr');
+  const contact = row.querySelector('[data-field="contact"]').textContent.trim();
+  const service = row.querySelector('[data-field="service"]').textContent.trim();
+  const description = row.querySelector('[data-field="description"]').textContent.trim();
+
+  if (!contact) {
+    alert('Client contact is required to send a message.');
+    return;
+  }
+
+  const channel = prompt('Send message via: email, sms, or whatsapp', 'email');
+  if (!channel) return;
+
+  const normalized = channel.trim().toLowerCase();
+
+  if (normalized === 'email' && !contact.includes('@')) {
+    alert('This contact is not a valid email address.');
+    return;
+  }
+  if (normalized === 'sms' && !/\d/.test(contact)) {
+    alert('This contact is not a valid phone number.');
+    return;
+  }
+  if (normalized !== 'email' && normalized !== 'sms' && normalized !== 'whatsapp') {
+    alert('Please choose email, sms, or whatsapp.');
+    return;
+  }
+
+  const url = formatMessage(contact, service || 'N/A', description || 'N/A', normalized);
+  window.open(url, '_blank');
+}
+
+async function deleteBooking(button) {
+  if (!confirm('Delete this booking permanently?')) {
+    return;
+  }
+
+  const row = button.closest('tr');
+  const bookingId = row.dataset.id;
+  const response = await fetch(`/admin/bookings/${bookingId}`, {method: 'DELETE'});
+
+  if (!response.ok) {
+    const error = await response.json();
+    alert(error.error || 'Unable to delete booking.');
+    return;
+  }
+
+  loadBookings();
+}
+
+async function logout(){
+  await fetch('/admin/logout', {method:'POST'});
+  window.location.href = '/admin/login';
+}
+
+loadBookings();
+</script>
+</body>
+</html>
