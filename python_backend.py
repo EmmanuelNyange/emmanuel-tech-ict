@@ -1,8 +1,21 @@
 from pathlib import Path
 import sqlite3
+import uuid
 from datetime import datetime
-from flask import Flask, request, jsonify, redirect, session
+from flask import Flask, request, jsonify, redirect, session, send_file
 from flask_cors import CORS
+from flask_mail import Mail, Message
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from io import BytesIO
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "emmanuel_tech.db"
@@ -11,7 +24,19 @@ app = Flask(__name__, static_folder=str(BASE_DIR), static_url_path="")
 app.secret_key = "change-this-secret-key"
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
 CORS(app)
+
+# Email Configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'your-email@gmail.com')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'your-app-password')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME', 'your-email@gmail.com')
+
+mail = Mail(app)
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin123"
@@ -33,6 +58,14 @@ def init_db():
                 contact TEXT NOT NULL,
                 service TEXT,
                 description TEXT NOT NULL,
+                ticket_code TEXT,
+                price TEXT,
+                service_datetime TEXT,
+                problems_found TEXT DEFAULT '',
+                solutions TEXT DEFAULT '',
+                recommendations TEXT DEFAULT '',
+                amount_paid TEXT DEFAULT '',
+                paid_at TEXT DEFAULT '',
                 created_at TEXT NOT NULL,
                 status TEXT NOT NULL DEFAULT 'new',
                 notes TEXT DEFAULT ''
@@ -40,30 +73,84 @@ def init_db():
             """
         )
         columns = [row[1] for row in conn.execute("PRAGMA table_info(bookings)").fetchall()]
+        if 'name' not in columns:
+            conn.execute("ALTER TABLE bookings ADD COLUMN name TEXT DEFAULT ''")
+        if 'ticket_code' not in columns:
+            conn.execute("ALTER TABLE bookings ADD COLUMN ticket_code TEXT DEFAULT ''")
+        if 'price' not in columns:
+            conn.execute("ALTER TABLE bookings ADD COLUMN price TEXT DEFAULT ''")
+        if 'service_datetime' not in columns:
+            conn.execute("ALTER TABLE bookings ADD COLUMN service_datetime TEXT DEFAULT ''")
+        if 'problems_found' not in columns:
+            conn.execute("ALTER TABLE bookings ADD COLUMN problems_found TEXT DEFAULT ''")
+        if 'solutions' not in columns:
+            conn.execute("ALTER TABLE bookings ADD COLUMN solutions TEXT DEFAULT ''")
+        if 'recommendations' not in columns:
+            conn.execute("ALTER TABLE bookings ADD COLUMN recommendations TEXT DEFAULT ''")
+        if 'amount_paid' not in columns:
+            conn.execute("ALTER TABLE bookings ADD COLUMN amount_paid TEXT DEFAULT ''")
+        if 'paid_at' not in columns:
+            conn.execute("ALTER TABLE bookings ADD COLUMN paid_at TEXT DEFAULT ''")
         if 'status' not in columns:
             conn.execute("ALTER TABLE bookings ADD COLUMN status TEXT NOT NULL DEFAULT 'new'")
         if 'notes' not in columns:
             conn.execute("ALTER TABLE bookings ADD COLUMN notes TEXT DEFAULT ''")
 
 
+def generate_ticket_code():
+    return f"TKT-{datetime.utcnow():%Y%m%d%H%M%S}-{uuid.uuid4().hex[:6].upper()}"
+
 @app.route("/book", methods=["POST"])
 def book():
     data = request.get_json() or {}
     contact = (data.get("contact") or "").strip()
+    name = (data.get("name") or "").strip()
     service = (data.get("service") or "").strip()
     description = (data.get("description") or "").strip()
+    service_datetime = (data.get("service_datetime") or "").strip()
 
-    if not contact or not description:
-        return jsonify({"error": "contact and description are required"}), 400
+    if not contact or not name or not service or not description or not service_datetime:
+        return jsonify({"error": "name, contact, service, description, and service date/time are required"}), 400
 
+    ticket_code = generate_ticket_code()
     created_at = datetime.utcnow().isoformat()
     with get_db() as conn:
-        conn.execute(
-            "INSERT INTO bookings (contact, service, description, created_at) VALUES (?, ?, ?, ?)",
-            (contact, service, description, created_at),
+        cursor = conn.execute(
+            "INSERT INTO bookings (name, contact, service, description, ticket_code, service_datetime, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (name, contact, service, description, ticket_code, service_datetime, created_at),
         )
+        booking_id = cursor.lastrowid
 
-    return jsonify({"message": "Booking saved successfully"}), 201
+    # Get the complete booking data for email
+    booking_data = {
+        'id': booking_id,
+        'name': name,
+        'contact': contact,
+        'service': service,
+        'description': description,
+        'ticket_code': ticket_code,
+        'service_datetime': service_datetime,
+        'created_at': created_at
+    }
+
+    # Send confirmation email (don't block the response if email fails)
+    email_sent = False
+    if '@' in contact:  # Only send email if contact contains @
+        try:
+            email_sent = send_booking_confirmation_email(booking_data)
+        except Exception as e:
+            print(f"Email sending failed but booking was successful: {str(e)}")
+
+    return jsonify({
+        "message": "Booking saved successfully",
+        "ticket_code": ticket_code,
+        "service_datetime": service_datetime,
+        "service": service,
+        "description": description,
+        "contact": contact,
+        "name": name,
+        "email_sent": email_sent
+    }), 201
 
 
 @app.route("/bookings", methods=["GET"])
@@ -103,6 +190,12 @@ def admin_dashboard_page():
         return redirect("/admin/login")
     return app.send_static_file("admin_dashboard.html")
 
+@app.route("/admin/report", methods=["GET"])
+def admin_report_page():
+    if not session.get("admin_logged_in"):
+        return redirect("/admin/login")
+    return app.send_static_file("admin_report.html")
+
 @app.route("/admin/bookings", methods=["GET"])
 def admin_bookings():
     if not session.get("admin_logged_in"):
@@ -112,13 +205,24 @@ def admin_bookings():
         rows = conn.execute("SELECT * FROM bookings ORDER BY created_at DESC").fetchall()
         return jsonify([dict(row) for row in rows])
 
+@app.route("/admin/bookings/<int:booking_id>", methods=["GET"])
+def admin_get_booking(booking_id):
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
+        if row is None:
+            return jsonify({"error": "Booking not found"}), 404
+        return jsonify(dict(row))
+
 @app.route("/admin/bookings/<int:booking_id>", methods=["PATCH"])
 def admin_update_booking(booking_id):
     if not session.get("admin_logged_in"):
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.get_json() or {}
-    allowed = ['contact', 'service', 'description', 'status', 'notes']
+    allowed = ['contact', 'service', 'description', 'status', 'notes', 'price', 'service_datetime', 'amount_paid', 'problems_found', 'solutions', 'recommendations']
     fields = {k: v for k, v in data.items() if k in allowed}
 
     if not fields:
@@ -145,6 +249,63 @@ def admin_update_booking(booking_id):
 
     return jsonify({"success": True})
 
+@app.route("/admin/bookings/<int:booking_id>/report", methods=["POST"])
+def admin_save_report(booking_id):
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    allowed = ['problems_found', 'solutions', 'recommendations', 'price', 'service_datetime', 'notes']
+    fields = {k: v for k, v in data.items() if k in allowed}
+
+    if not fields:
+        return jsonify({"error": "No valid report fields to save"}), 400
+
+    keys = []
+    params = []
+    for key, value in fields.items():
+        keys.append(f"{key} = ?")
+        params.append(str(value).strip())
+
+    params.append(booking_id)
+    with get_db() as conn:
+        cursor = conn.execute(
+            f"UPDATE bookings SET {', '.join(keys)} WHERE id = ?",
+            params,
+        )
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Booking not found"}), 404
+
+        row = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
+        return jsonify(dict(row))
+
+@app.route("/admin/bookings/<int:booking_id>/payment", methods=["POST"])
+def admin_record_payment(booking_id):
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    amount_paid = (data.get('amount_paid') or '').strip()
+    price = (data.get('price') or '').strip()
+    if not amount_paid:
+        return jsonify({"error": "amount_paid is required"}), 400
+
+    paid_at = datetime.utcnow().isoformat()
+    sql = "UPDATE bookings SET amount_paid = ?, paid_at = ?, status = 'done'"
+    params = [amount_paid, paid_at]
+    if price:
+        sql += ", price = ?"
+        params.append(price)
+    sql += " WHERE id = ?"
+    params.append(booking_id)
+
+    with get_db() as conn:
+        cursor = conn.execute(sql, params)
+        if cursor.rowcount == 0:
+            return jsonify({"error": "Booking not found"}), 404
+        row = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
+        return jsonify(dict(row))
+
 @app.route("/admin/bookings/<int:booking_id>", methods=["DELETE"])
 def admin_delete_booking(booking_id):
     if not session.get("admin_logged_in"):
@@ -156,6 +317,177 @@ def admin_delete_booking(booking_id):
             return jsonify({"error": "Booking not found"}), 404
 
     return jsonify({"success": True})
+
+def generate_ticket_pdf(booking_id):
+    """Generate a PDF ticket for a booking"""
+    with get_db() as conn:
+        booking = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
+        if not booking:
+            return None
+        booking = dict(booking)
+    
+    # Create PDF in memory
+    pdf_buffer = BytesIO()
+    doc = SimpleDocTemplate(pdf_buffer, pagesize=letter, rightMargin=0.5*inch, leftMargin=0.5*inch,
+                            topMargin=0.5*inch, bottomMargin=0.5*inch)
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#0a3d62'),
+        spaceAfter=6,
+        alignment=1  # center
+    )
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=12,
+        textColor=colors.HexColor('#0a3d62'),
+        spaceAfter=12,
+    )
+    
+    # Build PDF content
+    elements = []
+    elements.append(Paragraph("EMMANUEL TECH ICT SOLUTIONS", title_style))
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(Paragraph("Service Booking Ticket", heading_style))
+    elements.append(Spacer(1, 0.1*inch))
+    
+    # Ticket details table
+    ticket_data = [
+        ["Ticket Number:", booking.get('ticket_code', '')],
+        ["Customer Name:", booking.get('name', '')],
+        ["Contact:", booking.get('contact', '')],
+        ["Service:", booking.get('service', '')],
+        ["Service Date & Time:", booking.get('service_datetime', '')],
+        ["Issue Description:", booking.get('description', '')],
+        ["Issued Date:", datetime.fromisoformat(booking.get('created_at', '')).strftime('%B %d, %Y at %I:%M %p')],
+        ["Status:", booking.get('status', 'pending').upper()],
+    ]
+    
+    table = Table(ticket_data, colWidths=[2*inch, 4*inch])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f0f0f0')),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+    ]))
+    
+    elements.append(table)
+    elements.append(Spacer(1, 0.2*inch))
+    elements.append(Paragraph(
+        "<b>Important:</b> Please keep this ticket for your reference during service. "
+        "Contact us with your ticket number for any inquiries.",
+        styles['Normal']
+    ))
+    elements.append(Spacer(1, 0.1*inch))
+    elements.append(Paragraph(
+        "<b>Contact Information:</b><br/>Email: emmanueltechictsolutions@gmail.com<br/>Phone: 0716205974",
+        styles['Normal']
+    ))
+    
+    doc.build(elements)
+    pdf_buffer.seek(0)
+    return pdf_buffer
+
+def send_booking_confirmation_email(booking_data):
+    """Send booking confirmation email with PDF ticket attachment"""
+    try:
+        print(f"Attempting to send email to: {booking_data['contact']}")
+
+        # Generate PDF ticket
+        pdf_buffer = generate_ticket_pdf(booking_data['id'])
+        if not pdf_buffer:
+            print("Failed to generate PDF for email")
+            return False
+
+        # Create email message
+        msg = Message(
+            subject=f"Service Booking Confirmation - {booking_data['ticket_code']}",
+            recipients=[booking_data['contact']] if '@' in booking_data['contact'] else []
+        )
+
+        print(f"Email recipients: {msg.recipients}")
+
+        if not msg.recipients:
+            print("No valid email recipients found")
+            return False
+
+        # Email body
+        email_body = f"""
+Dear {booking_data['name']},
+
+Thank you for choosing Emmanuel Tech ICT Solutions!
+
+Your service booking has been successfully confirmed and is now in progress.
+
+Booking Details:
+- Ticket Number: {booking_data['ticket_code']}
+- Service: {booking_data['service']}
+- Scheduled Date & Time: {booking_data['service_datetime']}
+- Issue Description: {booking_data['description']}
+
+Your service is currently being processed. Our team will contact you shortly to arrange the service visit.
+
+Please keep this ticket number ({booking_data['ticket_code']}) for your reference during the service.
+
+If you have any questions or need to reschedule, please contact us:
+- Email: emmanueltechictsolutions@gmail.com
+- Phone: 0716205974
+
+The ticket receipt is attached to this email for your records.
+
+Best regards,
+Emmanuel Tech ICT Solutions Team
+"""
+
+        msg.body = email_body
+
+        # Attach PDF
+        pdf_buffer.seek(0)
+        msg.attach(
+            filename=f"{booking_data['ticket_code']}.pdf",
+            content_type="application/pdf",
+            data=pdf_buffer.getvalue()
+        )
+
+        # Send email
+        print("Sending email...")
+        mail.send(msg)
+        print(f"Booking confirmation email sent to {booking_data['contact']}")
+        return True
+
+    except Exception as e:
+        print(f"Failed to send booking confirmation email: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+@app.route("/ticket/<ticket_code>/download", methods=["GET"])
+def download_ticket(ticket_code):
+    """Download ticket as PDF"""
+    with get_db() as conn:
+        booking = conn.execute("SELECT id FROM bookings WHERE ticket_code = ?", (ticket_code,)).fetchone()
+        if not booking:
+            return jsonify({"error": "Ticket not found"}), 404
+    
+    pdf_buffer = generate_ticket_pdf(booking['id'])
+    if not pdf_buffer:
+        return jsonify({"error": "Could not generate ticket"}), 500
+    
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f"{ticket_code}.pdf"
+    )
 
 @app.route("/")
 def index():

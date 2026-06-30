@@ -84,8 +84,12 @@ async function loadBookings(){
     return `
       <tr data-id="${b.id}">
         <td>${b.id}</td>
+        <td>${escapeHtml(b.ticket_code || '')}</td>
         <td class="editable" data-field="contact">${escapeHtml(b.contact)}</td>
         <td class="editable" data-field="service">${escapeHtml(b.service || '')}</td>
+        <td class="editable" data-field="price">${escapeHtml(b.price || '')}</td>
+        <td class="editable" data-field="service_datetime">${escapeHtml(b.service_datetime || '')}</td>
+        <td class="editable" data-field="amount_paid">${escapeHtml(b.amount_paid || '')}</td>
         <td class="editable" data-field="description">${escapeHtml(b.description)}</td>
         <td><span class="status-pill ${escapeHtml(status)}">${statusLabels[status] || statusLabels.new}</span></td>
         <td class="editable" data-field="notes">${escapeHtml(b.notes || '')}</td>
@@ -104,7 +108,7 @@ async function loadBookings(){
   tableWrap.innerHTML = `
     <table>
       <thead>
-        <tr><th>ID</th><th>Contact</th><th>Service</th><th>Description</th><th>Status</th><th>Notes</th><th>Created At</th><th>Actions</th></tr>
+        <tr><th>ID</th><th>Ticket Code</th><th>Contact</th><th>Service</th><th>Price</th><th>Service Date/Time</th><th>Amount Paid</th><th>Description</th><th>Status</th><th>Notes</th><th>Created At</th><th>Actions</th></tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
@@ -191,6 +195,10 @@ async function toggleStatus(button) {
   statusCell.textContent = statusLabels[nextStatus] || nextStatus;
   statusCell.className = `status-pill ${nextStatus}`;
   button.textContent = getStatusActionLabel(nextStatus);
+
+  if (nextStatus === 'done') {
+    window.location.href = `/admin/report?booking_id=${bookingId}`;
+  }
 }
 
 function formatMessage(contact, service, description, channel) {

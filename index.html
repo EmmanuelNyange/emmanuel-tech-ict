@@ -194,6 +194,36 @@ form input, form textarea{
     padding:10px;
     margin:8px 0;
 }
+.ticket{
+    display:none;
+    background:#fff;
+    border-radius:12px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.1);
+    padding:20px;
+    margin-top:20px;
+}
+.ticket h3{
+    margin-top:0;
+}
+.ticket-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+}
+.ticket-label{
+    font-weight:600;
+    color:#0a3d62;
+    width:150px;
+}
+.ticket-value{
+    flex:1;
+    color:#111;
+}
+.ticket button{
+    margin-top:14px;
+}
 
 /* FOOTER */
 footer{
@@ -243,6 +273,142 @@ footer{
     background:#fff;
     padding:10px;
     cursor:pointer;
+}
+
+/* MODAL */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background-color: var(--card);
+    margin: 50px auto;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    animation: slideIn 0.3s ease-in;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    color: #0a3d62;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #1e90ff;
+    padding-bottom: 15px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.modal-body {
+    margin-bottom: 20px;
+}
+
+.ticket-summary {
+    background: #f0f0f0;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #1e90ff;
+}
+
+.ticket-summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.ticket-summary-item strong {
+    color: #0a3d62;
+}
+
+.modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.modal-btn {
+    padding: 12px 15px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.modal-btn-download {
+    background: #1e90ff;
+    color: white;
+}
+
+.modal-btn-download:hover {
+    background: #1a7acc;
+}
+
+.modal-btn-print {
+    background: #ff9800;
+    color: white;
+}
+
+.modal-btn-print:hover {
+    background: #e68900;
+}
+
+.modal-btn-whatsapp {
+    grid-column: 1 / -1;
+    background: #25D366;
+    color: white;
+}
+
+.modal-btn-whatsapp:hover {
+    background: #1fa952;
+}
+
+.modal-btn-close {
+    grid-column: 1 / -1;
+    background: #e0e0e0;
+    color: #333;
+}
+
+.modal-btn-close:hover {
+    background: #c0c0c0;
+}
+
+.modal-success {
+    color: #4caf50;
+    font-size: 14px;
+    text-align: center;
+    margin-top: 10px;
+    display: none;
 }
 </style>
 </head>
@@ -320,8 +486,10 @@ footer{
 <section id="booking">
 <h2>Book a Service</h2>
 <form onsubmit="sendBoth(event)">
+<input type="text" id="name" placeholder="Your Full Name" required>
 <input type="text" id="contact" placeholder="Phone or Email" required>
-<input type="text" id="service" readonly placeholder="Selected Service">
+<input type="text" id="service" readonly placeholder="Selected Service" required>
+<input type="datetime-local" id="service_datetime" placeholder="Service Date & Time" required>
 <textarea id="description" placeholder="Describe your issue" required></textarea>
 <button class="btn">Submit</button>
 </form>
@@ -336,6 +504,44 @@ footer{
 <footer>
     <p>© 2026 Emmanuel Tech ICT Solutions - All rights reserved.</p>
 </footer>
+
+<!-- POST BOOKING MODAL -->
+<div id="bookingModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>✓ Booking Confirmed</h2>
+        </div>
+        <div class="modal-body">
+            <div class="ticket-summary">
+                <div class="ticket-summary-item">
+                    <strong>Ticket #</strong>
+                    <span id="modalTicketCode"></span>
+                </div>
+                <div class="ticket-summary-item">
+                    <strong>Name</strong>
+                    <span id="modalName"></span>
+                </div>
+                <div class="ticket-summary-item">
+                    <strong>Service</strong>
+                    <span id="modalService"></span>
+                </div>
+                <div class="ticket-summary-item">
+                    <strong>Date & Time</strong>
+                    <span id="modalDateTime"></span>
+                </div>
+            </div>
+            <p style="color: #666; font-size: 14px; margin-bottom: 10px;">Your booking has been successfully saved. Download or print your ticket for reference. You can also share it via WhatsApp.</p>
+            <div id="emailStatus" style="display: none; margin-bottom: 15px; padding: 10px; border-radius: 6px; font-size: 14px;"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="modal-btn modal-btn-download" onclick="downloadTicket()"><i class="fas fa-download"></i>Download</button>
+            <button class="modal-btn modal-btn-print" onclick="printTicketModal()"><i class="fas fa-print"></i>Print</button>
+            <button class="modal-btn modal-btn-whatsapp" onclick="shareWhatsApp()"><i class="fab fa-whatsapp"></i>Share via WhatsApp</button>
+            <button class="modal-btn modal-btn-close" onclick="closeBookingModal()">Done</button>
+        </div>
+        <div class="modal-success" id="modalSuccess">✓ Ticket downloaded successfully!</div>
+    </div>
+</div>
 
 <a href="https://wa.me/254716205974" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
 <a href="tel:+254716205974" class="call-float"><i class="fas fa-phone"></i></a>
@@ -365,30 +571,248 @@ function setService(s){
 document.getElementById('service').value=s;
 }
 
+let currentTicket = null;
+
 async function sendBoth(e){
     e.preventDefault();
-    let contact=document.getElementById('contact').value;
-    let service=document.getElementById('service').value;
-    let desc=document.getElementById('description').value;
+    let name=document.getElementById('name').value.trim();
+    let contact=document.getElementById('contact').value.trim();
+    let service=document.getElementById('service').value.trim();
+    let dateTime=document.getElementById('service_datetime').value.trim();
+    let desc=document.getElementById('description').value.trim();
+
+    if (!name || !contact || !service || !dateTime || !desc) {
+        alert('Please fill in all booking fields before submitting.');
+        return;
+    }
 
     const payload = {
+        name,
         contact,
         service,
+        service_datetime: dateTime,
         description: desc
     };
 
     try {
-        await fetch('/book', {
+        const response = await fetch('/book', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-    } catch (err) {
-        console.error('Unable to save booking to Python backend:', err);
-    }
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            alert(errorData.error || 'Booking failed. Please try again.');
+            return;
+        }
 
-    let msg=`Hello Emmanuel Tech ICT Solutions,%0AContact:${contact}%0AService:${service}%0ADescription:${desc}`;
-    window.open(`https://wa.me/254716205974?text=${msg}`);
+        const ticket = await response.json();
+        currentTicket = ticket;
+        showBookingModal(ticket);
+        
+        // Reset form
+        document.querySelector('#booking form').reset();
+    } catch (err) {
+        console.error('Booking error:', err);
+        alert('Unable to save booking. Please try again later.');
+    }
+}
+
+function showBookingModal(ticket) {
+    document.getElementById('modalTicketCode').innerText = ticket.ticket_code;
+    document.getElementById('modalName').innerText = ticket.name;
+    document.getElementById('modalService').innerText = ticket.service;
+    
+    const dt = new Date(ticket.service_datetime);
+    document.getElementById('modalDateTime').innerText = dt.toLocaleString();
+    
+    // Show email status if available
+    const emailStatusDiv = document.getElementById('emailStatus');
+    if (ticket.email_sent === true) {
+        emailStatusDiv.style.display = 'block';
+        emailStatusDiv.style.backgroundColor = '#e8f5e8';
+        emailStatusDiv.style.border = '1px solid #4caf50';
+        emailStatusDiv.style.color = '#2e7d32';
+        emailStatusDiv.innerHTML = '<i class="fas fa-envelope"></i> ✓ Confirmation email sent with ticket attached';
+    } else if (ticket.email_sent === false) {
+        emailStatusDiv.style.display = 'block';
+        emailStatusDiv.style.backgroundColor = '#fff3e0';
+        emailStatusDiv.style.border = '1px solid #ff9800';
+        emailStatusDiv.style.color = '#e65100';
+        emailStatusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Email could not be sent, but booking was saved';
+    } else {
+        emailStatusDiv.style.display = 'none';
+    }
+    
+    document.getElementById('bookingModal').style.display = 'block';
+    document.getElementById('modalSuccess').style.display = 'none';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeBookingModal() {
+    document.getElementById('bookingModal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function downloadTicket() {
+    if (!currentTicket || !currentTicket.ticket_code) {
+        alert('No ticket available to download.');
+        return;
+    }
+    
+    const downloadUrl = `/ticket/${currentTicket.ticket_code}/download`;
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `${currentTicket.ticket_code}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    document.getElementById('modalSuccess').style.display = 'block';
+    setTimeout(() => {
+        document.getElementById('modalSuccess').style.display = 'none';
+    }, 3000);
+}
+
+function printTicketModal() {
+    if (!currentTicket) {
+        alert('No ticket available to print.');
+        return;
+    }
+    
+    const ticket = currentTicket;
+    const ticketHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Service Ticket - ${ticket.ticket_code}</title>
+            <style>
+                body {
+                    font-family: 'Poppins', Arial, sans-serif;
+                    padding: 30px;
+                    color: #333;
+                    background: white;
+                }
+                .ticket-container {
+                    max-width: 600px;
+                    margin: auto;
+                    border: 2px solid #0a3d62;
+                    border-radius: 8px;
+                    padding: 25px;
+                    background: white;
+                }
+                h1 {
+                    text-align: center;
+                    color: #0a3d62;
+                    margin-bottom: 10px;
+                    font-size: 24px;
+                }
+                .subtitle {
+                    text-align: center;
+                    color: #666;
+                    margin-bottom: 25px;
+                    font-size: 14px;
+                }
+                .ticket-item {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 10px 0;
+                    border-bottom: 1px solid #e0e0e0;
+                }
+                .ticket-item:last-child {
+                    border-bottom: none;
+                }
+                .label {
+                    font-weight: 700;
+                    color: #0a3d62;
+                    min-width: 150px;
+                }
+                .value {
+                    text-align: right;
+                    flex: 1;
+                }
+                .footer {
+                    margin-top: 25px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #666;
+                    border-top: 1px solid #e0e0e0;
+                    padding-top: 15px;
+                }
+                @media print {
+                    body { margin: 0; padding: 0; }
+                    .ticket-container { border: 1px solid #ccc; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="ticket-container">
+                <h1>EMMANUEL TECH ICT SOLUTIONS</h1>
+                <p class="subtitle">Service Booking Ticket</p>
+                
+                <div class="ticket-item">
+                    <span class="label">Ticket Number:</span>
+                    <span class="value">${ticket.ticket_code}</span>
+                </div>
+                <div class="ticket-item">
+                    <span class="label">Customer Name:</span>
+                    <span class="value">${ticket.name}</span>
+                </div>
+                <div class="ticket-item">
+                    <span class="label">Contact:</span>
+                    <span class="value">${ticket.contact}</span>
+                </div>
+                <div class="ticket-item">
+                    <span class="label">Service:</span>
+                    <span class="value">${ticket.service}</span>
+                </div>
+                <div class="ticket-item">
+                    <span class="label">Service Date & Time:</span>
+                    <span class="value">${new Date(ticket.service_datetime).toLocaleString()}</span>
+                </div>
+                <div class="ticket-item">
+                    <span class="label">Issue Description:</span>
+                    <span class="value">${ticket.description}</span>
+                </div>
+                <div class="ticket-item">
+                    <span class="label">Issued Date:</span>
+                    <span class="value">${new Date().toLocaleString()}</span>
+                </div>
+                
+                <div class="footer">
+                    <p><strong>Important:</strong> Please keep this ticket for your reference during service.</p>
+                    <p>Contact: emmanueltechictsolutions@gmail.com | Phone: 0716205974</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    printWindow.document.write(ticketHtml);
+    printWindow.document.close();
+    setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    }, 250);
+}
+
+function shareWhatsApp() {
+    if (!currentTicket) return;
+    
+    const ticket = currentTicket;
+    const msg = `Hello Emmanuel Tech ICT Solutions,%0A%0A*Booking Confirmation*%0ATicket: ${ticket.ticket_code}%0AName: ${ticket.name}%0AContact: ${ticket.contact}%0AService: ${ticket.service}%0ADate/Time: ${ticket.service_datetime}%0ADescription: ${ticket.description}%0A%0APlease confirm receipt of this booking.`;
+    
+    window.open(`https://wa.me/254716205974?text=${msg}`, '_blank');
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('bookingModal');
+    if (event.target === modal) {
+        closeBookingModal();
+    }
 }
 </script>
 

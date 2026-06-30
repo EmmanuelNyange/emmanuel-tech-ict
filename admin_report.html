@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Service Report | Emmanuel Tech ICT</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Poppins',sans-serif;background:#f4f6f9;color:#111;}
+header{background:#0a3d62;color:#fff;padding:24px 28px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+header h1{margin:0;font-size:22px;}
+button{border:none;border-radius:10px;padding:12px 18px;color:#fff;background:#0a3d62;cursor:pointer;font-size:14px;}
+button.secondary{background:#475569;}
+button.pay{background:#16a34a;}
+button.print{background:#2563eb;}
+main{padding:24px;max-width:1000px;margin:auto;}
+.card{background:#fff;border-radius:18px;box-shadow:0 18px 45px rgba(0,0,0,.08);padding:24px;}
+.grid{display:grid;gap:18px;grid-template-columns:1fr 1fr;}
+.grid-full{grid-column:1/-1;}
+label{display:block;font-weight:600;margin-bottom:6px;color:#0a3d62;}
+input,textarea{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:12px;outline:none;}
+textarea{min-height:120px;resize:vertical;}
+.field-group{margin-bottom:18px;}
+.notice{padding:16px;background:#e0f2fe;color:#0369a1;border-radius:12px;margin-bottom:20px;}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Service Report</h1>
+    <p id="bookingStatus" style="margin:6px 0 0;font-size:14px;color:#cbd5e1;"></p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="secondary" onclick="window.location.href='/admin/dashboard'">Back to Dashboard</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+</header>
+<main>
+  <div class="card">
+    <div id="errorMessage" class="notice hidden"></div>
+    <div id="bookingDetails" class="hidden">
+      <div class="field-group grid grid-full">
+        <div><label>Client Contact</label><input type="text" id="contact" readonly></div>
+        <div><label>Service Offered</label><input type="text" id="service" readonly></div>
+      </div>
+      <div class="field-group grid grid-full">
+        <div><label>Booked Date & Time</label><input type="text" id="service_datetime" readonly></div>
+        <div><label>Ticket Code</label><input type="text" id="ticket_code" readonly></div>
+      </div>
+      <div class="field-group grid grid-full">
+        <div><label>Price to be Paid</label><input type="text" id="price" placeholder="Enter price to be paid"></div>
+        <div><label>Client Name / Name on Receipt</label><input type="text" id="client_name" placeholder="e.g. John Doe"></div>
+      </div>
+      <div class="field-group grid grid-full">
+        <div class="grid-full"><label>Problems Found</label><textarea id="problems_found" placeholder="Enter problems found during service"></textarea></div>
+      </div>
+      <div class="field-group grid grid-full">
+        <div class="grid-full"><label>Solutions Made</label><textarea id="solutions" placeholder="Enter solutions applied"></textarea></div>
+      </div>
+      <div class="field-group grid grid-full">
+        <div class="grid-full"><label>Recommendations</label><textarea id="recommendations" placeholder="Enter recommendations for the client"></textarea></div>
+      </div>
+      <div class="field-group grid grid-full">
+        <div><label>Amount Paid</label><input type="text" id="amount_paid" placeholder="Enter payment amount"></div>
+        <div><label>Payment Date</label><input type="text" id="paid_at" readonly></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;">
+        <button type="button" onclick="saveReport()">Save Report</button>
+        <button type="button" class="pay" onclick="completePayment()">Complete Payment & Print Receipt</button>
+        <button type="button" class="print" onclick="printReport()">Print Report</button>
+      </div>
+    </div>
+    <div id="reportPreview" class="hidden" style="margin-top:24px;"></div>
+  </div>
+</main>
+<script>
+const params = new URLSearchParams(window.location.search);
+const bookingId = params.get('booking_id');
+
+function showError(message) {
+  const error = document.getElementById('errorMessage');
+  error.textContent = message;
+  error.classList.remove('hidden');
+}
+
+function clearError() {
+  const error = document.getElementById('errorMessage');
+  error.textContent = '';
+  error.classList.add('hidden');
+}
+
+async function loadBooking() {
+  if (!bookingId) {
+    showError('Missing booking_id in the URL.');
+    return;
+  }
+  const response = await fetch(`/admin/bookings/${bookingId}`);
+  if (response.status === 401) {
+    window.location.href = '/admin/login';
+    return;
+  }
+  if (!response.ok) {
+    const data = await response.json();
+    showError(data.error || 'Unable to load booking details.');
+    return;
+  }
+
+  const booking = await response.json();
+  document.getElementById('bookingDetails').classList.remove('hidden');
+  document.getElementById('contact').value = booking.contact || '';
+  document.getElementById('service').value = booking.service || '';
+  document.getElementById('service_datetime').value = booking.service_datetime || '';
+  document.getElementById('ticket_code').value = booking.ticket_code || '';
+  document.getElementById('price').value = booking.price || '';
+  document.getElementById('problems_found').value = booking.problems_found || '';
+  document.getElementById('solutions').value = booking.solutions || '';
+  document.getElementById('recommendations').value = booking.recommendations || '';
+  document.getElementById('amount_paid').value = booking.amount_paid || '';
+  document.getElementById('paid_at').value = booking.paid_at || '';
+  document.getElementById('client_name').value = booking.contact || '';
+  document.getElementById('bookingStatus').textContent = `Booking #${booking.id} • Status: ${booking.status || 'new'}`;
+}
+
+async function saveReport() {
+  clearError();
+  const payload = {
+    problems_found: document.getElementById('problems_found').value.trim(),
+    solutions: document.getElementById('solutions').value.trim(),
+    recommendations: document.getElementById('recommendations').value.trim(),
+    price: document.getElementById('price').value.trim(),
+  };
+  const response = await fetch(`/admin/bookings/${bookingId}/report`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    const data = await response.json();
+    showError(data.error || 'Unable to save report.');
+    return;
+  }
+  const updated = await response.json();
+  document.getElementById('paid_at').value = updated.paid_at || '';
+  document.getElementById('bookingStatus').textContent = `Booking #${updated.id} • Status: ${updated.status || 'new'}`;
+  renderReport(updated);
+}
+
+function renderReport(booking) {
+  const preview = document.getElementById('reportPreview');
+  preview.classList.remove('hidden');
+  preview.innerHTML = `
+    <div class="notice" style="background:#f8fafc;color:#0f172a;">
+      <strong>Report ready to print.</strong> Use the Print Report button or press Ctrl+P.
+    </div>
+    <h2>Service Report Preview</h2>
+    <p><strong>Client:</strong> ${escapeHtml(document.getElementById('client_name').value)}</p>
+    <p><strong>Service:</strong> ${escapeHtml(booking.service || '')}</p>
+    <p><strong>Date / Time:</strong> ${escapeHtml(booking.service_datetime || '')}</p>
+    <p><strong>Price to be paid:</strong> ${escapeHtml(booking.price || '')}</p>
+    <p><strong>Problems Found:</strong></p>
+    <p>${escapeHtml(booking.problems_found || '')}</p>
+    <p><strong>Solutions:</strong></p>
+    <p>${escapeHtml(booking.solutions || '')}</p>
+    <p><strong>Recommendations:</strong></p>
+    <p>${escapeHtml(booking.recommendations || '')}</p>
+  `;
+}
+
+async function completePayment() {
+  clearError();
+  const amountPaid = document.getElementById('amount_paid').value.trim();
+  const price = document.getElementById('price').value.trim();
+  if (!amountPaid) {
+    showError('Enter the payment amount before printing the receipt.');
+    return;
+  }
+  const response = await fetch(`/admin/bookings/${bookingId}/payment`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({amount_paid: amountPaid, price})
+  });
+  if (!response.ok) {
+    const data = await response.json();
+    showError(data.error || 'Unable to complete payment.');
+    return;
+  }
+  const booking = await response.json();
+  document.getElementById('paid_at').value = booking.paid_at || '';
+  document.getElementById('bookingStatus').textContent = `Booking #${booking.id} • Status: ${booking.status || 'done'}`;
+  printReceipt(booking);
+}
+
+function printReport() {
+  const booking = {
+    service: document.getElementById('service').value,
+    service_datetime: document.getElementById('service_datetime').value,
+    price: document.getElementById('price').value,
+    problems_found: document.getElementById('problems_found').value,
+    solutions: document.getElementById('solutions').value,
+    recommendations: document.getElementById('recommendations').value,
+    client_name: document.getElementById('client_name').value,
+    contact: document.getElementById('contact').value,
+    ticket_code: document.getElementById('ticket_code').value,
+  };
+  const content = `
+    <h1>Service Report</h1>
+    <p><strong>Client Name:</strong> ${escapeHtml(booking.client_name)}</p>
+    <p><strong>Contact:</strong> ${escapeHtml(booking.contact)}</p>
+    <p><strong>Service:</strong> ${escapeHtml(booking.service)}</p>
+    <p><strong>Booked Date & Time:</strong> ${escapeHtml(booking.service_datetime)}</p>
+    <p><strong>Ticket Code:</strong> ${escapeHtml(booking.ticket_code)}</p>
+    <p><strong>Price to be Paid:</strong> ${escapeHtml(booking.price)}</p>
+    <h2>Problems Found</h2>
+    <p>${escapeHtml(booking.problems_found)}</p>
+    <h2>Solutions Made</h2>
+    <p>${escapeHtml(booking.solutions)}</p>
+    <h2>Recommendations</h2>
+    <p>${escapeHtml(booking.recommendations)}</p>
+  `;
+  const printWindow = window.open('', '_blank', 'width=900,height=700');
+  printWindow.document.write(`<!DOCTYPE html><html><head><title>Service Report</title><style>body{font-family:Poppins,sans-serif;padding:24px;color:#111;}h1{color:#0a3d62;}p{line-height:1.6;}strong{color:#0f172a;}</style></head><body>${content}</body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+}
+
+function printReceipt(booking) {
+  const service = booking.service || document.getElementById('service').value;
+  const date = booking.service_datetime || document.getElementById('service_datetime').value;
+  const name = document.getElementById('client_name').value || booking.contact || '';
+  const amount = booking.amount_paid || document.getElementById('amount_paid').value;
+  const content = `
+    <h1>Payment Receipt</h1>
+    <p><strong>Client Name:</strong> ${escapeHtml(name)}</p>
+    <p><strong>Service Offered:</strong> ${escapeHtml(service)}</p>
+    <p><strong>Date / Time:</strong> ${escapeHtml(date)}</p>
+    <p><strong>Amount Paid:</strong> ${escapeHtml(amount)}</p>
+    <p><strong>Ticket Code:</strong> ${escapeHtml(document.getElementById('ticket_code').value)}</p>
+    <p>Thank you for your payment.</p>
+  `;
+  const printWindow = window.open('', '_blank', 'width=900,height=700');
+  printWindow.document.write(`<!DOCTYPE html><html><head><title>Payment Receipt</title><style>body{font-family:Poppins,sans-serif;padding:24px;color:#111;}h1{color:#16a34a;}p{line-height:1.6;}strong{color:#0f172a;}</style></head><body>${content}</body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  printWindow.close();
+}
+
+function escapeHtml(text) {
+  return String(text || '').replace(/[&<>"]/g, function(m) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]);
+  });
+}
+
+async function logout(){
+  await fetch('/admin/logout', {method:'POST'});
+  window.location.href = '/admin/login';
+}
+
+loadBooking();
+</script>
+</body>
+</html>
