@@ -1,7 +1,9 @@
 from pathlib import Path
+import re
 import sqlite3
 import uuid
 from datetime import datetime
+from urllib.parse import quote
 from flask import Flask, request, jsonify, redirect, session, send_file
 from flask_cors import CORS
 from flask_mail import Mail, Message
@@ -40,6 +42,43 @@ mail = Mail(app)
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin123"
+
+
+def get_confirmation_channel(contact, preferred_channel=""):
+    normalized = (preferred_channel or "").strip().lower()
+    if normalized in {"email", "whatsapp"}:
+        return normalized
+    if '@' in str(contact or ""):
+        return "email"
+    if re.search(r"\d", str(contact or "")):
+        return "whatsapp"
+    return "email"
+
+
+def build_confirmation_link(contact, booking, preferred_channel=""):
+    channel = get_confirmation_channel(contact, preferred_channel)
+    booking_name = (booking or {}).get("name") or "there"
+    ticket_code = (booking or {}).get("ticket_code") or "your booking"
+    service = (booking or {}).get("service") or "service"
+    service_datetime = (booking or {}).get("service_datetime") or "your scheduled time"
+    description = (booking or {}).get("description") or "your request"
+    message = (
+        f"Hello {booking_name}! Your booking {ticket_code} for {service} on {service_datetime} "
+        f"is confirmed. Description: {description}. Thank you for choosing Emmanuel Tech ICT Solutions."
+    )
+
+    if channel == "whatsapp":
+        digits = re.sub(r"\D", "", str(contact or ""))
+        if digits.startswith("0"):
+            digits = "254" + digits[1:]
+        if not digits:
+            digits = "254716205974"
+        return f"https://wa.me/{digits}?text={quote(message)}"
+
+    email_address = str(contact or "").strip()
+    if not email_address or '@' not in email_address:
+        email_address = "emmanueltechictsolutions@gmail.com"
+    return f"mailto:{email_address}?subject={quote(f'Booking confirmed - {ticket_code}')}&body={quote(message)}"
 
 
 def get_db():
@@ -108,6 +147,7 @@ def book():
     service = (data.get("service") or "").strip()
     description = (data.get("description") or "").strip()
     service_datetime = (data.get("service_datetime") or "").strip()
+    preferred_channel = (data.get("preferred_channel") or "").strip().lower()
 
     if not contact or not name or not service or not description or not service_datetime:
         return jsonify({"error": "name, contact, service, description, and service date/time are required"}), 400
@@ -121,7 +161,6 @@ def book():
         )
         booking_id = cursor.lastrowid
 
-    # Get the complete booking data for email
     booking_data = {
         'id': booking_id,
         'name': name,
@@ -133,13 +172,7 @@ def book():
         'created_at': created_at
     }
 
-    # Send confirmation email (don't block the response if email fails)
-    email_sent = False
-    if '@' in contact:  # Only send email if contact contains @
-        try:
-            email_sent = send_booking_confirmation_email(booking_data)
-        except Exception as e:
-            print(f"Email sending failed but booking was successful: {str(e)}")
+    confirmation = send_booking_confirmation(booking_data, preferred_channel)
 
     return jsonify({
         "message": "Booking saved successfully",
@@ -149,7 +182,8 @@ def book():
         "description": description,
         "contact": contact,
         "name": name,
-        "email_sent": email_sent
+        "email_sent": confirmation.get("channel") == "email" and confirmation.get("sent", False),
+        "confirmation": confirmation,
     }), 201
 
 
@@ -396,6 +430,24 @@ def generate_ticket_pdf(booking_id):
     doc.build(elements)
     pdf_buffer.seek(0)
     return pdf_buffer
+
+def send_booking_confirmation(booking_data, preferred_channel=""):
+    """Send a confirmation response by email or prepare a WhatsApp link."""
+    contact = (booking_data.get("contact") or "").strip()
+    channel = get_confirmation_channel(contact, preferred_channel)
+
+    if channel == "email" and '@' in contact:
+        try:
+            return {"channel": "email", "sent": send_booking_confirmation_email(booking_data), "link": None}
+        except Exception as e:
+            print(f"Email sending failed but booking was successful: {str(e)}")
+            return {"channel": "email", "sent": False, "link": None}
+
+    if channel == "whatsapp":
+        return {"channel": "whatsapp", "sent": False, "link": build_confirmation_link(contact, booking_data, "whatsapp")}
+
+    return {"channel": "email", "sent": False, "link": None}
+
 
 def send_booking_confirmation_email(booking_data):
     """Send booking confirmation email with PDF ticket attachment"""

@@ -546,6 +546,7 @@ footer{
 <a href="https://wa.me/254716205974" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
 <a href="tel:+254716205974" class="call-float"><i class="fas fa-phone"></i></a>
 
+<script src="/config.js"></script>
 <script>
 window.onload=()=>{document.getElementById('loader').style.display='none';};
 
@@ -591,11 +592,12 @@ async function sendBoth(e){
         contact,
         service,
         service_datetime: dateTime,
-        description: desc
+        description: desc,
+        preferred_channel: contact.includes('@') ? 'email' : 'whatsapp'
     };
 
     try {
-        const response = await fetch('/book', {
+        const response = await fetch(window.getApiUrl('/book'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -629,18 +631,29 @@ function showBookingModal(ticket) {
     
     // Show email status if available
     const emailStatusDiv = document.getElementById('emailStatus');
-    if (ticket.email_sent === true) {
+    const confirmation = ticket.confirmation || {};
+    if (confirmation.channel === 'whatsapp' && confirmation.link) {
+        window.open(confirmation.link, '_blank', 'noopener');
+    }
+
+    if (confirmation.channel === 'email' && confirmation.sent === true) {
         emailStatusDiv.style.display = 'block';
         emailStatusDiv.style.backgroundColor = '#e8f5e8';
         emailStatusDiv.style.border = '1px solid #4caf50';
         emailStatusDiv.style.color = '#2e7d32';
         emailStatusDiv.innerHTML = '<i class="fas fa-envelope"></i> ✓ Confirmation email sent with ticket attached';
+    } else if (confirmation.channel === 'whatsapp' && confirmation.link) {
+        emailStatusDiv.style.display = 'block';
+        emailStatusDiv.style.backgroundColor = '#e8f5e8';
+        emailStatusDiv.style.border = '1px solid #25D366';
+        emailStatusDiv.style.color = '#128C7E';
+        emailStatusDiv.innerHTML = '<i class="fab fa-whatsapp"></i> ✓ WhatsApp confirmation ready. Open the link to send it.';
     } else if (ticket.email_sent === false) {
         emailStatusDiv.style.display = 'block';
         emailStatusDiv.style.backgroundColor = '#fff3e0';
         emailStatusDiv.style.border = '1px solid #ff9800';
         emailStatusDiv.style.color = '#e65100';
-        emailStatusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Email could not be sent, but booking was saved';
+        emailStatusDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Confirmation could not be sent automatically, but booking was saved';
     } else {
         emailStatusDiv.style.display = 'none';
     }
@@ -661,7 +674,7 @@ function downloadTicket() {
         return;
     }
     
-    const downloadUrl = `/ticket/${currentTicket.ticket_code}/download`;
+    const downloadUrl = window.getApiUrl(`/ticket/${currentTicket.ticket_code}/download`);
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.download = `${currentTicket.ticket_code}.pdf`;

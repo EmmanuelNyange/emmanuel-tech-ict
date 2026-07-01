@@ -74,6 +74,7 @@ textarea{min-height:120px;resize:vertical;}
     <div id="reportPreview" class="hidden" style="margin-top:24px;"></div>
   </div>
 </main>
+<script src="/config.js"></script>
 <script>
 const params = new URLSearchParams(window.location.search);
 const bookingId = params.get('booking_id');
@@ -95,7 +96,7 @@ async function loadBooking() {
     showError('Missing booking_id in the URL.');
     return;
   }
-  const response = await fetch(`/admin/bookings/${bookingId}`);
+  const response = await fetch(window.getApiUrl(`/admin/bookings/${bookingId}`));
   if (response.status === 401) {
     window.location.href = '/admin/login';
     return;
@@ -130,7 +131,7 @@ async function saveReport() {
     recommendations: document.getElementById('recommendations').value.trim(),
     price: document.getElementById('price').value.trim(),
   };
-  const response = await fetch(`/admin/bookings/${bookingId}/report`, {
+  const response = await fetch(window.getApiUrl(`/admin/bookings/${bookingId}/report`), {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(payload)
@@ -175,7 +176,7 @@ async function completePayment() {
     showError('Enter the payment amount before printing the receipt.');
     return;
   }
-  const response = await fetch(`/admin/bookings/${bookingId}/payment`, {
+  const response = await fetch(window.getApiUrl(`/admin/bookings/${bookingId}/payment`), {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({amount_paid: amountPaid, price})
@@ -255,7 +256,7 @@ function escapeHtml(text) {
 }
 
 async function logout(){
-  await fetch('/admin/logout', {method:'POST'});
+  await fetch(window.getApiUrl('/admin/logout'), {method:'POST'});
   window.location.href = '/admin/login';
 }
 

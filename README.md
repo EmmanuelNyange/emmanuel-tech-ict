@@ -14,6 +14,18 @@ A comprehensive web application for ICT service bookings with ticket generation 
 
 ## Setup Instructions
 
+### Free GitHub Hosting Option
+
+This system can be hosted for free on GitHub Pages for the front end, while the booking backend can run on a free service such as Render or Railway. The admin and customer sides both use the same booking flow and can be opened from the hosted site.
+
+1. Create a GitHub repository for this project.
+2. Upload the static files such as [index.html](index.html), [admin_login.html](admin_login.html), [admin_dashboard.html](admin_dashboard.html), and [admin_report.html](admin_report.html) to the repository.
+3. Enable GitHub Pages from the repository settings and choose the main branch as the source.
+4. Deploy the Flask backend separately on Render/Railway and point the frontend to that backend URL.
+5. Replace the local fetch URLs in the HTML files with your hosted backend URL if needed.
+
+> For a fully free setup, keep the frontend on GitHub Pages and the backend on a free tier service that supports Python.
+
 ### 1. Install Dependencies
 
 ```bash
