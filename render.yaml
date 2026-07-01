@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: emmanuel-tech-ict
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn python_backend:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SECRET_KEY
+        value: change-this-secret-key

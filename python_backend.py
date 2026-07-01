@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).parent
 DB_PATH = BASE_DIR / "emmanuel_tech.db"
 
 app = Flask(__name__, static_folder=str(BASE_DIR), static_url_path="")
-app.secret_key = "change-this-secret-key"
+app.secret_key = os.getenv("SECRET_KEY", "change-this-secret-key")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
@@ -547,4 +547,4 @@ def index():
 
 if __name__ == "__main__":
     init_db()
-    app.run(host="127.0.0.1", port=5001, debug=True)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5001)), debug=False)
