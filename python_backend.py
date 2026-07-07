@@ -1,4 +1,5 @@
 from pathlib import Path
+import csv
 import re
 import sqlite3
 import uuid
@@ -12,7 +13,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
-from io import BytesIO
+from io import BytesIO, StringIO
 import os
 from dotenv import load_dotenv
 
@@ -30,13 +31,13 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 CORS(app)
 
 # Email Configuration
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'your-email@gmail.com')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'your-app-password')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME', 'your-email@gmail.com')
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com').strip()
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587').strip())
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').strip().lower() in {'1', 'true', 'yes', 'on'}
+app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').strip().lower() in {'1', 'true', 'yes', 'on'}
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'your-email@gmail.com').strip()
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'your-app-password').strip().replace(' ', '')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME']).strip()
 
 mail = Mail(app)
 
@@ -239,6 +240,45 @@ def admin_bookings():
         rows = conn.execute("SELECT * FROM bookings ORDER BY created_at DESC").fetchall()
         return jsonify([dict(row) for row in rows])
 
+@app.route("/admin/bookings/export", methods=["GET"])
+def admin_export_bookings():
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, name, contact, service, description, ticket_code, price, service_datetime, amount_paid, paid_at, created_at, status, notes FROM bookings ORDER BY created_at DESC"
+        ).fetchall()
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "id",
+        "name",
+        "contact",
+        "service",
+        "description",
+        "ticket_code",
+        "price",
+        "service_datetime",
+        "amount_paid",
+        "paid_at",
+        "created_at",
+        "status",
+        "notes",
+    ])
+
+    for row in rows:
+        writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12]])
+
+    csv_bytes = output.getvalue().encode("utf-8")
+    return send_file(
+        BytesIO(csv_bytes),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="bookings.csv",
+    )
+
 @app.route("/admin/bookings/<int:booking_id>", methods=["GET"])
 def admin_get_booking(booking_id):
     if not session.get("admin_logged_in"):
@@ -352,14 +392,21 @@ def admin_delete_booking(booking_id):
 
     return jsonify({"success": True})
 
-def generate_ticket_pdf(booking_id):
-    """Generate a PDF ticket for a booking"""
-    with get_db() as conn:
-        booking = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
-        if not booking:
-            return None
-        booking = dict(booking)
-    
+def generate_ticket_pdf(booking_or_id):
+    """Generate a PDF ticket for a booking from either an ID or a booking dictionary."""
+    booking = None
+
+    if isinstance(booking_or_id, dict):
+        booking = dict(booking_or_id)
+    else:
+        with get_db() as conn:
+            row = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_or_id,)).fetchone()
+            if row:
+                booking = dict(row)
+
+    if not booking:
+        return None
+
     # Create PDF in memory
     pdf_buffer = BytesIO()
     doc = SimpleDocTemplate(pdf_buffer, pagesize=letter, rightMargin=0.5*inch, leftMargin=0.5*inch,
@@ -389,6 +436,12 @@ def generate_ticket_pdf(booking_id):
     elements.append(Paragraph("Service Booking Ticket", heading_style))
     elements.append(Spacer(1, 0.1*inch))
     
+    created_at = booking.get('created_at') or datetime.utcnow().isoformat()
+    try:
+        issued_date = datetime.fromisoformat(created_at).strftime('%B %d, %Y at %I:%M %p')
+    except Exception:
+        issued_date = str(created_at)
+
     # Ticket details table
     ticket_data = [
         ["Ticket Number:", booking.get('ticket_code', '')],
@@ -397,8 +450,8 @@ def generate_ticket_pdf(booking_id):
         ["Service:", booking.get('service', '')],
         ["Service Date & Time:", booking.get('service_datetime', '')],
         ["Issue Description:", booking.get('description', '')],
-        ["Issued Date:", datetime.fromisoformat(booking.get('created_at', '')).strftime('%B %d, %Y at %I:%M %p')],
-        ["Status:", booking.get('status', 'pending').upper()],
+        ["Issued Date:", issued_date],
+        ["Status:", (booking.get('status') or 'pending').upper()],
     ]
     
     table = Table(ticket_data, colWidths=[2*inch, 4*inch])
@@ -455,25 +508,26 @@ def send_booking_confirmation_email(booking_data):
         print(f"Attempting to send email to: {booking_data['contact']}")
 
         # Generate PDF ticket
-        pdf_buffer = generate_ticket_pdf(booking_data['id'])
+        pdf_buffer = generate_ticket_pdf(booking_data)
         if not pdf_buffer:
             print("Failed to generate PDF for email")
             return False
 
-        # Create email message
-        msg = Message(
-            subject=f"Service Booking Confirmation - {booking_data['ticket_code']}",
-            recipients=[booking_data['contact']] if '@' in booking_data['contact'] else []
-        )
+        with app.app_context():
+            # Create email message
+            msg = Message(
+                subject=f"Service Booking Confirmation - {booking_data['ticket_code']}",
+                recipients=[booking_data['contact']] if '@' in booking_data['contact'] else []
+            )
 
-        print(f"Email recipients: {msg.recipients}")
+            print(f"Email recipients: {msg.recipients}")
 
-        if not msg.recipients:
-            print("No valid email recipients found")
-            return False
+            if not msg.recipients:
+                print("No valid email recipients found")
+                return False
 
-        # Email body
-        email_body = f"""
+            # Email body
+            email_body = f"""
 Dear {booking_data['name']},
 
 Thank you for choosing Emmanuel Tech ICT Solutions!
@@ -500,21 +554,21 @@ Best regards,
 Emmanuel Tech ICT Solutions Team
 """
 
-        msg.body = email_body
+            msg.body = email_body
 
-        # Attach PDF
-        pdf_buffer.seek(0)
-        msg.attach(
-            filename=f"{booking_data['ticket_code']}.pdf",
-            content_type="application/pdf",
-            data=pdf_buffer.getvalue()
-        )
+            # Attach PDF
+            pdf_buffer.seek(0)
+            msg.attach(
+                filename=f"{booking_data['ticket_code']}.pdf",
+                content_type="application/pdf",
+                data=pdf_buffer.getvalue()
+            )
 
-        # Send email
-        print("Sending email...")
-        mail.send(msg)
-        print(f"Booking confirmation email sent to {booking_data['contact']}")
-        return True
+            # Send email
+            print("Sending email...")
+            mail.send(msg)
+            print(f"Booking confirmation email sent to {booking_data['contact']}")
+            return True
 
     except Exception as e:
         print(f"Failed to send booking confirmation email: {str(e)}")

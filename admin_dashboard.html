@@ -33,7 +33,10 @@ th{background:#f8fafc;color:#0f172a;}
     <button class="back-button" onclick="window.location.href='/'">Back to site</button>
     <h1>Admin Dashboard</h1>
   </div>
-  <button onclick="logout()">Logout</button>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <button class="back-button" onclick="exportBookings()">Export CSV</button>
+    <button onclick="logout()">Logout</button>
+  </div>
 </header>
 <main>
   <section>
@@ -114,6 +117,29 @@ async function loadBookings(){
       <tbody>${rows}</tbody>
     </table>
   `;
+}
+
+async function exportBookings() {
+  const response = await fetch(window.getApiUrl('/admin/bookings/export'));
+  if (response.status === 401) {
+    window.location.href = '/admin/login';
+    return;
+  }
+
+  if (!response.ok) {
+    alert('Unable to export bookings right now.');
+    return;
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'bookings.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
 }
 
 function escapeHtml(text) {

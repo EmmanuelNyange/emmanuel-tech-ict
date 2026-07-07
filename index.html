@@ -275,7 +275,124 @@ footer{
     cursor:pointer;
 }
 
-/* MODAL */
+/* CHATBOT */
+.chatbot-toggle {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0a3d62, #1e90ff);
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 1800;
+}
+
+.chatbot-window {
+    position: fixed;
+    left: 20px;
+    bottom: 90px;
+    width: min(360px, calc(100vw - 30px));
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: 0 20px 45px rgba(0,0,0,0.2);
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    z-index: 1800;
+}
+
+.chatbot-header {
+    background: #0a3d62;
+    color: #fff;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chatbot-header strong {
+    font-size: 15px;
+}
+
+.chatbot-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+    background: #f8fafc;
+}
+
+.chat-bubble {
+    max-width: 85%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.chat-bubble.user {
+    align-self: flex-end;
+    background: #0a3d62;
+    color: #fff;
+}
+
+.chat-bubble.bot {
+    align-self: flex-start;
+    background: #e2e8f0;
+    color: #111;
+}
+
+.chatbot-footer {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid #e5e7eb;
+    background: #fff;
+}
+
+.chatbot-footer input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+}
+
+.chatbot-footer button {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #1e90ff;
+    color: #fff;
+    cursor: pointer;
+}
+
+.chatbot-quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.chatbot-quick-replies button {
+    border: 1px solid #94a3b8;
+    background: #fff;
+    color: #0f172a;
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
 .modal {
     display: none;
     position: fixed;
@@ -543,6 +660,26 @@ footer{
     </div>
 </div>
 
+<div class="chatbot-toggle" onclick="toggleChatbot()" title="Chat with E-Tech"><i class="fas fa-comments"></i></div>
+<div class="chatbot-window" id="chatbotWindow">
+    <div class="chatbot-header">
+        <strong>E-Tech Assistant</strong>
+        <button onclick="toggleChatbot()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">×</button>
+    </div>
+    <div class="chatbot-body" id="chatbotBody">
+        <div class="chat-bubble bot">Hello! I’m E-Tech. I can help with services, booking, pricing, and contact details.</div>
+        <div class="chatbot-quick-replies">
+            <button onclick="sendQuickReply('Book a service')">Book a service</button>
+            <button onclick="sendQuickReply('What services do you offer?')">What services do you offer?</button>
+            <button onclick="sendQuickReply('How can I contact you?')">How can I contact you?</button>
+        </div>
+    </div>
+    <div class="chatbot-footer">
+        <input id="chatbotInput" type="text" placeholder="Type your message..." />
+        <button onclick="handleChatbotSubmit()"><i class="fas fa-paper-plane"></i></button>
+    </div>
+</div>
+
 <a href="https://wa.me/254716205974" class="whatsapp-float"><i class="fab fa-whatsapp"></i></a>
 <a href="tel:+254716205974" class="call-float"><i class="fas fa-phone"></i></a>
 
@@ -566,6 +703,43 @@ document.getElementById('navLinks').classList.toggle('active');
 
 function toggleMode(){
 document.body.classList.toggle('dark');
+}
+
+function toggleChatbot(){
+    const windowEl = document.getElementById('chatbotWindow');
+    windowEl.style.display = windowEl.style.display === 'flex' ? 'none' : 'flex';
+}
+
+function appendChatMessage(text, sender){
+    const body = document.getElementById('chatbotBody');
+    const bubble = document.createElement('div');
+    bubble.className = `chat-bubble ${sender}`;
+    bubble.textContent = text;
+    body.appendChild(bubble);
+    body.scrollTop = body.scrollHeight;
+}
+
+function getBotReply(message){
+    const text = message.toLowerCase();
+    if (text.includes('book')) return 'You can book a service using the booking form on this page. Select a service and submit your details.';
+    if (text.includes('service')) return 'We offer ICT consulting, computer and printer repairs, graphics design, and e-cyber services.';
+    if (text.includes('contact') || text.includes('phone') || text.includes('email')) return 'You can reach us at emmanueltechictsolutions@gmail.com or call 0716205974.';
+    if (text.includes('price') || text.includes('cost')) return 'Pricing depends on the service and issue. Please use the booking form so we can provide a quote.';
+    return 'Thanks for reaching out! For a faster response, you can book a service or contact us directly on WhatsApp or phone.';
+}
+
+function handleChatbotSubmit(){
+    const input = document.getElementById('chatbotInput');
+    const message = input.value.trim();
+    if (!message) return;
+    appendChatMessage(message, 'user');
+    input.value = '';
+    setTimeout(() => appendChatMessage(getBotReply(message), 'bot'), 350);
+}
+
+function sendQuickReply(text){
+    document.getElementById('chatbotInput').value = text;
+    handleChatbotSubmit();
 }
 
 function setService(s){
