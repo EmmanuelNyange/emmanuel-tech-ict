@@ -1,5 +1,6 @@
 from pathlib import Path
 import csv
+import os
 import re
 import sqlite3
 import uuid
@@ -14,7 +15,6 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from io import BytesIO, StringIO
-import os
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -139,6 +139,61 @@ def init_db():
 
 def generate_ticket_code():
     return f"TKT-{datetime.utcnow():%Y%m%d%H%M%S}-{uuid.uuid4().hex[:6].upper()}"
+
+
+def get_chatbot_fallback_reply(message):
+    text = (message or "").strip().lower()
+    if any(keyword in text for keyword in ["book", "booking", "appointment"]):
+        return "You can book a service by filling out the booking form on the site. Choose a service, add your details, and submit it."
+    if any(keyword in text for keyword in ["service", "services", "repair", "design", "consult"]):
+        return "We offer ICT consulting, computer and printer repairs, graphics design, and e-cyber services."
+    if any(keyword in text for keyword in ["contact", "phone", "email", "reach"]):
+        return "You can reach us at emmanueltechictsolutions@gmail.com or call 0716205974."
+    if any(keyword in text for keyword in ["price", "cost", "quote", "pricing"]):
+        return "Pricing depends on the service and issue. Please use the booking form and we will provide a quote."
+    return "I can help with booking, services, pricing, and contact information. What would you like to know about Emmanuel Tech ICT Solutions?"
+
+
+def get_chatbot_ai_reply(message, api_key, model="gpt-4o-mini"):
+    import requests
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You are E-Tech, a helpful support assistant for Emmanuel Tech ICT Solutions. Keep answers concise, friendly, and practical."},
+            {"role": "user", "content": message},
+        ],
+        "temperature": 0.3,
+    }
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
+    response = requests.post("https://api.openai.com/v1/chat/completions", json=payload, headers=headers, timeout=12)
+    response.raise_for_status()
+    content = response.json()["choices"][0]["message"]["content"].strip()
+    return content or None
+
+
+@app.route("/chatbot", methods=["POST"])
+def chatbot():
+    data = request.get_json() or {}
+    message = (data.get("message") or "").strip()
+    if not message:
+        return jsonify({"reply": "Please type a message so I can help you."}), 400
+
+    reply = get_chatbot_fallback_reply(message)
+
+    api_key = (os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    if api_key:
+        try:
+            model = (os.getenv("CHATBOT_MODEL") or "gpt-4o-mini").strip() or "gpt-4o-mini"
+            ai_reply = get_chatbot_ai_reply(message, api_key, model=model)
+            if ai_reply:
+                reply = ai_reply
+        except Exception as exc:
+            print(f"AI chatbot fallback error: {exc}")
+
+    return jsonify({"reply": reply})
+
 
 @app.route("/book", methods=["POST"])
 def book():
