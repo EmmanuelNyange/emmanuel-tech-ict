@@ -65,8 +65,14 @@ textarea{min-height:120px;resize:vertical;}
         <div><label>Amount Paid</label><input type="text" id="amount_paid" placeholder="Enter payment amount"></div>
         <div><label>Payment Date</label><input type="text" id="paid_at" readonly></div>
       </div>
+      <div class="field-group grid grid-full">
+        <div><label>Customer Phone Number</label><input type="text" id="customer_phone" placeholder="e.g. 0716205974"></div>
+        <div><label>Amount to Request</label><input type="text" id="payment_request_amount" placeholder="e.g. 1000"></div>
+      </div>
+      <div class="notice">Prompt the client to pay before finalizing the report. The admin can send an M-Pesa STK push to the customer’s phone to enter their PIN.</div>
       <div style="display:flex;flex-wrap:wrap;gap:12px;">
         <button type="button" onclick="saveReport()">Save Report</button>
+        <button type="button" class="pay" onclick="requestMpesaPayment()">Send M-Pesa STK Push</button>
         <button type="button" class="pay" onclick="completePayment()">Complete Payment & Print Receipt</button>
         <button type="button" class="print" onclick="printReport()">Print Report</button>
       </div>
@@ -166,6 +172,28 @@ function renderReport(booking) {
     <p><strong>Recommendations:</strong></p>
     <p>${escapeHtml(booking.recommendations || '')}</p>
   `;
+}
+
+async function requestMpesaPayment() {
+  clearError();
+  const phone = document.getElementById('customer_phone').value.trim();
+  const amount = document.getElementById('payment_request_amount').value.trim();
+  if (!phone || !amount) {
+    showError('Enter the customer phone number and the amount to request before sending the M-Pesa push.');
+    return;
+  }
+  const response = await fetch(window.getApiUrl(`/admin/bookings/${bookingId}/payment-request`), {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({phone, amount})
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    showError(data.error || 'Unable to send M-Pesa request.');
+    return;
+  }
+  document.getElementById('amount_paid').value = amount;
+  showError(`M-Pesa STK push sent to ${phone}. Ask the customer to complete the payment on their phone.`);
 }
 
 async function completePayment() {

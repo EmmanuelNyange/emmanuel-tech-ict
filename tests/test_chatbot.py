@@ -12,6 +12,11 @@ class ChatbotTests(unittest.TestCase):
         reply = get_chatbot_fallback_reply("How can I contact you")
         self.assertIn("0716205974", reply)
 
+    def test_greeting_message_returns_salutation(self):
+        reply = get_chatbot_fallback_reply("Hello there")
+        self.assertIn("hello", reply.lower())
+        self.assertIn("e-tech", reply.lower())
+
     def test_chatbot_route_returns_json_reply(self):
         client = app.test_client()
         response = client.post("/chatbot", json={"message": "I want to book a service"})

@@ -717,6 +717,7 @@ function appendChatMessage(text, sender){
     bubble.textContent = text;
     body.appendChild(bubble);
     body.scrollTop = body.scrollHeight;
+    return bubble;
 }
 
 async function handleChatbotSubmit(){
@@ -725,7 +726,7 @@ async function handleChatbotSubmit(){
     if (!message) return;
     appendChatMessage(message, 'user');
     input.value = '';
-    appendChatMessage('Thinking...', 'bot');
+    const typingBubble = appendChatMessage('Thinking...', 'bot');
 
     try {
         const response = await fetch(window.getApiUrl('/chatbot'), {
@@ -735,14 +736,12 @@ async function handleChatbotSubmit(){
         });
 
         const data = await response.json();
-        const lastBubble = document.querySelector('.chat-bubble.bot:last-of-type');
-        if (lastBubble) {
-            lastBubble.textContent = data.reply || 'I could not answer that right now.';
+        if (typingBubble) {
+            typingBubble.textContent = data.reply || 'I could not answer that right now.';
         }
     } catch (err) {
-        const lastBubble = document.querySelector('.chat-bubble.bot:last-of-type');
-        if (lastBubble) {
-            lastBubble.textContent = 'I am currently offline, but you can still book a service or contact us directly.';
+        if (typingBubble) {
+            typingBubble.textContent = 'I am currently offline, but you can still book a service or contact us directly.';
         }
     }
 }

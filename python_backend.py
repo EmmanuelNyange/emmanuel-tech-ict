@@ -6,6 +6,7 @@ import sqlite3
 import uuid
 from datetime import datetime
 from urllib.parse import quote
+import requests
 from flask import Flask, request, jsonify, redirect, session, send_file
 from flask_cors import CORS
 from flask_mail import Mail, Message
@@ -143,6 +144,8 @@ def generate_ticket_code():
 
 def get_chatbot_fallback_reply(message):
     text = (message or "").strip().lower()
+    if any(keyword in text for keyword in ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening"]):
+        return "Hello! I'm E-Tech, your friendly support assistant for Emmanuel Tech ICT Solutions. How can I help you today?"
     if any(keyword in text for keyword in ["book", "booking", "appointment"]):
         return "You can book a service by filling out the booking form on the site. Choose a service, add your details, and submit it."
     if any(keyword in text for keyword in ["service", "services", "repair", "design", "consult"]):
@@ -154,9 +157,69 @@ def get_chatbot_fallback_reply(message):
     return "I can help with booking, services, pricing, and contact information. What would you like to know about Emmanuel Tech ICT Solutions?"
 
 
-def get_chatbot_ai_reply(message, api_key, model="gpt-4o-mini"):
-    import requests
+def normalize_phone_number(phone):
+    digits = re.sub(r"\D", "", str(phone or ""))
+    if not digits:
+        return ""
+    if digits.startswith("0"):
+        digits = "254" + digits[1:]
+    elif digits.startswith("254"):
+        digits = digits
+    elif len(digits) == 9:
+        digits = "254" + digits
+    return digits
 
+
+def build_mpesa_password(shortcode, passkey):
+    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    encoded = f"{shortcode}{passkey}{timestamp}".encode("utf-8")
+    import base64
+    return base64.b64encode(encoded).decode("utf-8")
+
+
+def get_mpesa_access_token():
+    access_token = (os.getenv("MPESA_ACCESS_TOKEN") or "").strip()
+    if access_token:
+        return access_token
+
+    consumer_key = (os.getenv("MPESA_CONSUMER_KEY") or "").strip()
+    consumer_secret = (os.getenv("MPESA_CONSUMER_SECRET") or "").strip()
+    if not consumer_key or not consumer_secret:
+        return ""
+
+    auth = requests.auth._basic_auth_str(consumer_key, consumer_secret)
+    response = requests.get(
+        "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
+        headers={"Authorization": auth},
+        timeout=20,
+    )
+    response.raise_for_status()
+    return response.json().get("access_token", "")
+
+
+def build_mpesa_stk_payload(phone, amount, account_reference):
+    normalized_phone = normalize_phone_number(phone)
+    shortcode = (os.getenv("MPESA_SHORTCODE") or "174379").strip()
+    passkey = (os.getenv("MPESA_PASSKEY") or "").strip()
+    password = (os.getenv("MPESA_PASSWORD") or "").strip()
+    if not password and shortcode and passkey:
+        password = build_mpesa_password(shortcode, passkey)
+    return {
+        "BusinessShortCode": shortcode,
+        "Password": password,
+        "Timestamp": datetime.utcnow().strftime("%Y%m%d%H%M%S"),
+        "TransactionType": "CustomerPayBillOnline",
+        "Amount": int(amount),
+        "PartyA": normalized_phone,
+        "PartyB": shortcode,
+        "PhoneNumber": normalized_phone,
+        "CallBackURL": os.getenv("MPESA_CALLBACK_URL", ""),
+        "AccountReference": str(account_reference or "EMMANUEL TECH"),
+        "TransactionDesc": "Service payment"
+    }
+
+
+def get_chatbot_ai_reply(message, api_key, model="gpt-4o-mini"):
     payload = {
         "model": model,
         "messages": [
@@ -407,6 +470,50 @@ def admin_save_report(booking_id):
 
         row = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
         return jsonify(dict(row))
+
+@app.route("/admin/bookings/<int:booking_id>/payment-request", methods=["POST"])
+def admin_request_payment(booking_id):
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    phone = (data.get("phone") or "").strip()
+    amount = (data.get("amount") or "").strip()
+    if not phone or not amount:
+        return jsonify({"error": "phone and amount are required"}), 400
+
+    with get_db() as conn:
+        booking = conn.execute("SELECT * FROM bookings WHERE id = ?", (booking_id,)).fetchone()
+        if booking is None:
+            return jsonify({"error": "Booking not found"}), 404
+
+    normalized_phone = normalize_phone_number(phone)
+    if not normalized_phone:
+        return jsonify({"error": "Phone number is invalid"}), 400
+
+    account_reference = (booking["ticket_code"] or f"BOOKING-{booking['id']}") if booking else f"BOOKING-{booking_id}"
+    payload = build_mpesa_stk_payload(normalized_phone, amount, account_reference)
+    auth_token = get_mpesa_access_token()
+    if not auth_token:
+        return jsonify({"error": "M-Pesa credentials are not configured", "phone": normalized_phone, "amount": amount}), 503
+
+    try:
+        response = requests.post(
+            os.getenv("MPESA_STK_PUSH_URL", "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"),
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {auth_token}",
+                "Content-Type": "application/json",
+            },
+            timeout=20,
+        )
+        response.raise_for_status()
+        result = response.json()
+    except Exception as exc:
+        return jsonify({"error": "M-Pesa request failed", "details": str(exc), "phone": normalized_phone, "amount": amount}), 502
+
+    return jsonify({"success": True, "phone": normalized_phone, "amount": amount, "mpesa_response": result})
+
 
 @app.route("/admin/bookings/<int:booking_id>/payment", methods=["POST"])
 def admin_record_payment(booking_id):
