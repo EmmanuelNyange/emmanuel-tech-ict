@@ -144,17 +144,152 @@ def generate_ticket_code():
 
 def get_chatbot_fallback_reply(message):
     text = (message or "").strip().lower()
+    if any(keyword in text for keyword in ["thank you", "thanks", "thx", "appreciate", "grateful", "many thanks"]):
+        return "You’re very welcome! I’m happy to help with bookings, services, pricing, or support. How may I assist you today?"
     if any(keyword in text for keyword in ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening"]):
         return "Hello! I'm E-Tech, your friendly support assistant for Emmanuel Tech ICT Solutions. How can I help you today?"
-    if any(keyword in text for keyword in ["book", "booking", "appointment"]):
+    if any(keyword in text for keyword in ["bye", "goodbye", "see you", "later"]):
+        return "Goodbye! We’re always here when you need support, booking help, or tech services."
+    if any(keyword in text for keyword in ["book", "booking", "appointment", "reserve", "schedule"]):
+        if any(keyword in text for keyword in ["laptop", "computer", "printer", "network", "wifi", "cctv", "website", "design", "repair", "consultation"]):
+            return "I can help book that service for you. Please send your full name, contact number or email, the service you want, and the preferred date/time."
         return "You can book a service by filling out the booking form on the site. Choose a service, add your details, and submit it."
-    if any(keyword in text for keyword in ["service", "services", "repair", "design", "consult"]):
+    if any(keyword in text for keyword in ["service", "services", "repair", "design", "consult", "it support"]):
         return "We offer ICT consulting, computer and printer repairs, graphics design, and e-cyber services."
-    if any(keyword in text for keyword in ["contact", "phone", "email", "reach"]):
+    if any(keyword in text for keyword in ["contact", "phone", "email", "reach", "call", "whatsapp"]):
         return "You can reach us at emmanueltechictsolutions@gmail.com or call 0716205974."
-    if any(keyword in text for keyword in ["price", "cost", "quote", "pricing"]):
+    if any(keyword in text for keyword in ["price", "cost", "quote", "pricing", "estimate"]):
         return "Pricing depends on the service and issue. Please use the booking form and we will provide a quote."
+    if any(keyword in text for keyword in ["how are you", "are you there", "who are you", "what can you do"]):
+        return "I’m E-Tech, your support assistant for Emmanuel Tech ICT Solutions. I can help with bookings, services, pricing, contact details, and general support."
     return "I can help with booking, services, pricing, and contact information. What would you like to know about Emmanuel Tech ICT Solutions?"
+
+
+def extract_chat_booking_details(message):
+    text = (message or "").strip()
+    lower_text = text.lower()
+    service = None
+    services = [
+        "laptop", "computer", "printer", "network", "wifi", "cctv",
+        "website", "design", "graphics design", "repair", "consultation",
+        "ict", "cyber", "maintenance"
+    ]
+    for candidate in services:
+        if candidate in lower_text:
+            service = candidate.title()
+            break
+
+    name = None
+    name_match = re.search(r"(?:my name is|i am|i'm|call me)\s+([a-zA-Z][a-zA-Z\s'-]+)", text, re.IGNORECASE)
+    if name_match:
+        name = name_match.group(1).strip()
+
+    contact = None
+    phone_match = re.search(r"(?:\+?254|0)\d{9,10}|\b\d{9,10}\b", text)
+    if phone_match:
+        contact = phone_match.group(0).strip()
+    email_match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
+    if email_match:
+        contact = email_match.group(0).strip()
+
+    service_datetime = None
+    if re.search(r"\b(tomorrow|today|next week|next month)\b", lower_text):
+        service_datetime = re.search(r"\b(tomorrow|today|next week|next month)\b", lower_text).group(1) if False else re.search(r"\b(tomorrow|today|next week|next month)\b", lower_text).group(0)
+    time_match = re.search(r"\b\d{1,2}(?::\d{2})?\s*(?:am|pm)?\b", text, re.IGNORECASE)
+    if time_match:
+        service_datetime = f"{service_datetime + ' ' if service_datetime else ''}{time_match.group(0).strip()}".strip()
+
+    if not service_datetime and re.search(r"\b\d{1,2}/\d{1,2}(?:/\d{2,4})?\b", text):
+        service_datetime = re.search(r"\b\d{1,2}/\d{1,2}(?:/\d{2,4})?\b", text).group(0)
+
+    description = "Requested through chat conversation"
+    if not service:
+        service = "Service"
+
+    return {
+        "name": name,
+        "contact": contact,
+        "service": service,
+        "service_datetime": service_datetime,
+        "description": description,
+    }
+
+
+def create_chat_booking_from_message(message):
+    details = extract_chat_booking_details(message)
+    name = (details.get("name") or "Customer").strip()
+    contact = (details.get("contact") or "").strip()
+    service = (details.get("service") or "Service").strip()
+    service_datetime = (details.get("service_datetime") or "").strip()
+    description = (details.get("description") or "Requested through chat conversation").strip()
+
+    if not contact:
+        return {"ready": False, "message": "I can help book that for you. Please send your full name and contact number or email so I can create the booking."}
+
+    if not service_datetime:
+        return {"ready": False, "message": "I can book that service for you. Please tell me the preferred date and time for the appointment."}
+
+    ticket_code = generate_ticket_code()
+    created_at = datetime.utcnow().isoformat()
+    with get_db() as conn:
+        cursor = conn.execute(
+            "INSERT INTO bookings (name, contact, service, description, ticket_code, service_datetime, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (name, contact, service, description, ticket_code, service_datetime, created_at),
+        )
+        booking_id = cursor.lastrowid
+
+    return {
+        "ready": True,
+        "message": f"Your booking request for {service} has been saved. Your ticket code is {ticket_code}. We will contact you on {contact}.",
+        "ticket_code": ticket_code,
+        "booking_id": booking_id,
+    }
+
+
+def get_chatbot_provider():
+    if (os.getenv("OPENAI_API_KEY") or "").strip() and len((os.getenv("OPENAI_API_KEY") or "").strip()) >= 20:
+        return "openai"
+    if (os.getenv("GEMINI_API_KEY") or "").strip() and len((os.getenv("GEMINI_API_KEY") or "").strip()) >= 20:
+        return "gemini"
+    return ""
+
+
+def get_chatbot_api_key(provider=None):
+    provider = (provider or get_chatbot_provider() or "").strip().lower()
+    if provider == "gemini":
+        key = (os.getenv("GEMINI_API_KEY") or "").strip()
+        if key and len(key) >= 20:
+            return key
+    if provider == "openai":
+        key = (os.getenv("OPENAI_API_KEY") or "").strip()
+        if key and len(key) >= 20:
+            return key
+
+    placeholders = {
+        "", "your-api-key", "your_openai_api_key", "your-gemini-api-key", "your_api_key",
+        "changeme", "change-me", "replace-me", "demo", "test", "fake", "example",
+        "your-api-key-here", "your-key-here", "api-key", "apikey"
+    }
+
+    for key_name in ["OPENAI_API_KEY", "GEMINI_API_KEY"]:
+        key = (os.getenv(key_name) or "").strip()
+        if key and key.lower() not in placeholders and len(key) >= 20:
+            return key
+    return ""
+
+
+def is_valid_contact(contact):
+    value = (contact or "").strip()
+    if not value:
+        return False
+    if re.fullmatch(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", value):
+        return True
+    digits = re.sub(r"\D", "", value)
+    if len(digits) in {9, 10}:
+        return True
+    if len(digits) == 12 and digits.startswith("254"):
+        return True
+    return False
 
 
 def normalize_phone_number(phone):
@@ -219,14 +354,49 @@ def build_mpesa_stk_payload(phone, amount, account_reference):
     }
 
 
-def get_chatbot_ai_reply(message, api_key, model="gpt-4o-mini"):
+def get_chatbot_ai_reply(message, api_key, model="gpt-4o-mini", provider=None):
+    provider = (provider or get_chatbot_provider() or "openai").strip().lower()
+
+    system_prompt = (
+        "You are E-Tech, the support assistant for Emmanuel Tech ICT Solutions. "
+        "Answer clearly, warmly, and practically in a few sentences. "
+        "Help with bookings, repairs, pricing, service details, contact info, and general support. "
+        "If the user is asking to book, ask only for the minimum needed and keep the answer helpful."
+    )
+
+    if provider == "gemini":
+        model_name = (model or "gemini-2.0-flash").strip() or "gemini-2.0-flash"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+        payload = {
+            "contents": [{
+                "parts": [{"text": f"{system_prompt}\n\nUser: {message}"}]
+            }],
+            "generationConfig": {
+                "temperature": 0.3,
+                "topP": 0.9,
+                "maxOutputTokens": 250,
+            }
+        }
+        response = requests.post(url, json=payload, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        candidates = data.get("candidates") or []
+        if not candidates:
+            return None
+        text = ""
+        for part in ((candidates[0].get("content") or {}).get("parts") or []):
+            if isinstance(part, dict):
+                text += str(part.get("text", ""))
+        return text.strip() or None
+
     payload = {
-        "model": model,
+        "model": model or "gpt-4o-mini",
         "messages": [
-            {"role": "system", "content": "You are E-Tech, a helpful support assistant for Emmanuel Tech ICT Solutions. Keep answers concise, friendly, and practical."},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": message},
         ],
         "temperature": 0.3,
+        "max_tokens": 250,
     }
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
@@ -243,13 +413,22 @@ def chatbot():
     if not message:
         return jsonify({"reply": "Please type a message so I can help you."}), 400
 
+    lower_message = message.lower()
+    booking_keywords = ["book", "booking", "appointment", "reserve", "schedule"]
+    if any(keyword in lower_message for keyword in booking_keywords):
+        booking_result = create_chat_booking_from_message(message)
+        if booking_result.get("ready"):
+            return jsonify({"reply": booking_result["message"]})
+        return jsonify({"reply": booking_result["message"]})
+
     reply = get_chatbot_fallback_reply(message)
 
-    api_key = (os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    provider = get_chatbot_provider()
+    api_key = get_chatbot_api_key(provider)
     if api_key:
         try:
-            model = (os.getenv("CHATBOT_MODEL") or "gpt-4o-mini").strip() or "gpt-4o-mini"
-            ai_reply = get_chatbot_ai_reply(message, api_key, model=model)
+            model = (os.getenv("CHATBOT_MODEL") or ("gemini-2.0-flash" if provider == "gemini" else "gpt-4o-mini")).strip() or ("gemini-2.0-flash" if provider == "gemini" else "gpt-4o-mini")
+            ai_reply = get_chatbot_ai_reply(message, api_key, model=model, provider=provider)
             if ai_reply:
                 reply = ai_reply
         except Exception as exc:
@@ -270,6 +449,8 @@ def book():
 
     if not contact or not name or not service or not description or not service_datetime:
         return jsonify({"error": "name, contact, service, description, and service date/time are required"}), 400
+    if not is_valid_contact(contact):
+        return jsonify({"error": "contact must be a valid phone number or email address"}), 400
 
     ticket_code = generate_ticket_code()
     created_at = datetime.utcnow().isoformat()

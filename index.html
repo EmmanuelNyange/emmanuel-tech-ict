@@ -321,6 +321,29 @@ footer{
     font-size: 15px;
 }
 
+.chatbot-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chatbot-book-now {
+    border: 1px solid rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chatbot-book-now:hover {
+    background: rgba(255,255,255,0.22);
+    transform: translateY(-1px);
+}
+
 .chatbot-body {
     padding: 14px;
     display: flex;
@@ -383,7 +406,8 @@ footer{
     margin-top: 4px;
 }
 
-.chatbot-quick-replies button {
+.chatbot-quick-replies button,
+.chatbot-service-suggestions button {
     border: 1px solid #94a3b8;
     background: #fff;
     color: #0f172a;
@@ -391,6 +415,27 @@ footer{
     padding: 7px 10px;
     font-size: 12px;
     cursor: pointer;
+    transition: all 0.2s ease;
+    animation: suggestionPop 0.25s ease-out;
+}
+
+.chatbot-quick-replies button:hover,
+.chatbot-service-suggestions button:hover {
+    transform: translateY(-1px) scale(1.02);
+    background: #e0f2fe;
+    border-color: #38bdf8;
+    box-shadow: 0 6px 18px rgba(14, 116, 144, 0.12);
+}
+
+@keyframes suggestionPop {
+    from {
+        opacity: 0;
+        transform: translateY(6px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .modal {
@@ -664,14 +709,20 @@ footer{
 <div class="chatbot-window" id="chatbotWindow">
     <div class="chatbot-header">
         <strong>E-Tech Assistant</strong>
-        <button onclick="toggleChatbot()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">×</button>
+        <div class="chatbot-header-actions">
+            <button class="chatbot-book-now" onclick="startChatBookingFlow()">Book now</button>
+            <button onclick="toggleChatbot()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:16px;">×</button>
+        </div>
     </div>
     <div class="chatbot-body" id="chatbotBody">
         <div class="chat-bubble bot">Hello! I’m E-Tech. I can help with services, booking, pricing, and contact details.</div>
         <div class="chatbot-quick-replies">
             <button onclick="sendQuickReply('Book a service')">Book a service</button>
-            <button onclick="sendQuickReply('What services do you offer?')">What services do you offer?</button>
-            <button onclick="sendQuickReply('How can I contact you?')">How can I contact you?</button>
+            <button onclick="sendQuickReply('What services do you offer?')">Services</button>
+            <button onclick="sendQuickReply('How can I contact you?')">Contact</button>
+            <button onclick="sendQuickReply('What is your pricing?')">Pricing</button>
+            <button onclick="sendQuickReply('I need laptop repair')">Laptop repair</button>
+            <button onclick="sendQuickReply('I need printer support')">Printer support</button>
         </div>
     </div>
     <div class="chatbot-footer">
@@ -720,12 +771,189 @@ function appendChatMessage(text, sender){
     return bubble;
 }
 
+const CHATBOOKING_STEPS = [
+    { key: 'name', prompt: 'Great! What is your full name?' },
+    { key: 'contact', prompt: 'Thanks. What is your phone number or email?' },
+    { key: 'service', prompt: 'What service do you need? Example: laptop repair, printer support, website design, network setup.' },
+    { key: 'datetime', prompt: 'What date and time would you like the service?' }
+];
+
+const CHATBOOKING_SERVICE_SUGGESTIONS = [
+    'Laptop repair',
+    'Printer support',
+    'ICT consulting',
+    'Graphics design',
+    'Network setup',
+    'Website design'
+];
+
+let chatBookingSession = null;
+
+function isValidChatContact(value) {
+    const cleaned = String(value || '').trim();
+    if (!cleaned) return false;
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleaned)) return true;
+    const digits = cleaned.replace(/\D/g, '');
+    return digits.length === 9 || digits.length === 10 || digits.length === 12;
+}
+
+function formatChatDateTime(value) {
+    const raw = String(value || '').trim();
+    const now = new Date();
+    let date = new Date(now);
+    const lower = raw.toLowerCase();
+
+    if (lower.includes('tomorrow')) {
+        date.setDate(date.getDate() + 1);
+    } else if (lower.includes('today')) {
+        date = new Date(now);
+    }
+
+    let hours = 10;
+    let minutes = 0;
+    const timeMatch = raw.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+    if (timeMatch) {
+        hours = Number(timeMatch[1]);
+        minutes = Number(timeMatch[2] || '0');
+        const meridiem = (timeMatch[3] || '').toLowerCase();
+        if (meridiem === 'pm' && hours < 12) hours += 12;
+        if (meridiem === 'am' && hours === 12) hours = 0;
+    }
+
+    date.setHours(hours, minutes, 0, 0);
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function clearChatSuggestions(){
+    const existing = document.querySelectorAll('.chatbot-service-suggestions');
+    existing.forEach(el => el.remove());
+}
+
+function renderServiceSuggestions(){
+    clearChatSuggestions();
+    const body = document.getElementById('chatbotBody');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'chatbot-service-suggestions';
+    wrapper.style.display = 'flex';
+    wrapper.style.flexWrap = 'wrap';
+    wrapper.style.gap = '8px';
+    wrapper.style.margin = '0 0 8px';
+
+    CHATBOOKING_SERVICE_SUGGESTIONS.forEach((service) => {
+        const btn = document.createElement('button');
+        btn.textContent = service;
+        btn.type = 'button';
+        btn.style.border = '1px solid #94a3b8';
+        btn.style.background = '#fff';
+        btn.style.color = '#0f172a';
+        btn.style.padding = '7px 10px';
+        btn.style.borderRadius = '999px';
+        btn.style.cursor = 'pointer';
+        btn.onclick = () => {
+            document.getElementById('chatbotInput').value = service;
+            handleChatbotSubmit();
+        };
+        wrapper.appendChild(btn);
+    });
+    body.appendChild(wrapper);
+}
+
+function startChatBookingFlow(){
+    const windowEl = document.getElementById('chatbotWindow');
+    if (windowEl) {
+        windowEl.style.display = 'flex';
+    }
+    chatBookingSession = { stepIndex: 0, answers: {} };
+    clearChatSuggestions();
+    appendChatMessage('I can help you book a service step by step. Let’s start.', 'bot');
+    const step = CHATBOOKING_STEPS[0];
+    appendChatMessage(step.prompt, 'bot');
+}
+
+function autoFillBookingFormFromChat(data) {
+    const formData = data || {};
+    const nameField = document.getElementById('name');
+    const contactField = document.getElementById('contact');
+    const serviceField = document.getElementById('service');
+    const dateField = document.getElementById('service_datetime');
+    const descriptionField = document.getElementById('description');
+
+    if (nameField) nameField.value = formData.name || nameField.value || '';
+    if (contactField) contactField.value = formData.contact || contactField.value || '';
+    if (serviceField) serviceField.value = formData.service || serviceField.value || '';
+    if (dateField) dateField.value = formData.service_datetime || dateField.value || '';
+    if (descriptionField) descriptionField.value = formData.description || descriptionField.value || '';
+
+    const bookingSection = document.getElementById('booking');
+    if (bookingSection) bookingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 async function handleChatbotSubmit(){
     const input = document.getElementById('chatbotInput');
     const message = input.value.trim();
     if (!message) return;
     appendChatMessage(message, 'user');
     input.value = '';
+
+    if (chatBookingSession) {
+        const currentStep = CHATBOOKING_STEPS[chatBookingSession.stepIndex];
+        if (currentStep) {
+            if (currentStep.key === 'contact' && !isValidChatContact(message)) {
+                appendChatMessage('Please enter a valid phone number or email address so I can contact you.', 'bot');
+                return;
+            }
+
+            if (currentStep.key === 'service') {
+                renderServiceSuggestions();
+            }
+
+            chatBookingSession.answers[currentStep.key] = message;
+            chatBookingSession.stepIndex += 1;
+
+            if (chatBookingSession.stepIndex < CHATBOOKING_STEPS.length) {
+                const nextStep = CHATBOOKING_STEPS[chatBookingSession.stepIndex];
+                if (nextStep.key === 'service') {
+                    renderServiceSuggestions();
+                }
+                appendChatMessage(nextStep.prompt, 'bot');
+                return;
+            }
+
+            const payload = {
+                name: chatBookingSession.answers.name || 'Customer',
+                contact: chatBookingSession.answers.contact || '',
+                service: chatBookingSession.answers.service || 'Service',
+                description: 'Requested via chat booking flow',
+                service_datetime: formatChatDateTime(chatBookingSession.answers.datetime || ''),
+                preferred_channel: /@/.test(String(chatBookingSession.answers.contact || '')) ? 'email' : 'whatsapp'
+            };
+
+            const typingBubble = appendChatMessage('Saving your booking...', 'bot');
+            fetch(window.getApiUrl('/book'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(async res => {
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Booking failed');
+                chatBookingSession = null;
+                clearChatSuggestions();
+                autoFillBookingFormFromChat(payload);
+                if (typingBubble) {
+                    typingBubble.textContent = `Your booking has been created successfully. Ticket: ${data.ticket_code}. We will contact you soon.`;
+                }
+            })
+            .catch(err => {
+                if (typingBubble) {
+                    typingBubble.textContent = 'I could not complete that booking yet. Please use the booking form or contact us directly.';
+                }
+            });
+            return;
+        }
+    }
+
     const typingBubble = appendChatMessage('Thinking...', 'bot');
 
     try {
@@ -738,6 +966,10 @@ async function handleChatbotSubmit(){
         const data = await response.json();
         if (typingBubble) {
             typingBubble.textContent = data.reply || 'I could not answer that right now.';
+        }
+
+        if (/book|booking|appointment|schedule/i.test(message) && !/cancel|help/i.test(message)) {
+            startChatBookingFlow();
         }
     } catch (err) {
         if (typingBubble) {
@@ -756,6 +988,10 @@ function handleChatbotKeydown(event){
 function sendQuickReply(text){
     document.getElementById('chatbotInput').value = text;
     handleChatbotSubmit();
+}
+
+function startQuickBooking(){
+    startChatBookingFlow();
 }
 
 function setService(s){
